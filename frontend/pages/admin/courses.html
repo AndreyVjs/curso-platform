@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gerenciar Cursos — CursoPlataforma</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../../assets/css/variables.css" />
+    <link rel="stylesheet" href="../../assets/css/base.css" />
+    <link rel="stylesheet" href="../../assets/css/components.css" />
+    <link rel="stylesheet" href="../../assets/css/layouts.css" />
+</head>
+
+<body>
+
+    <div class="app-layout">
+        <!-- ── SIDEBAR ── -->
+        <aside class="sidebar" id="sidebar">
+            <a href="dashboard.html" class="sidebar-logo">
+                <div class="sidebar-logo-icon">📚</div>
+                <div class="sidebar-logo-text">CursoPlataforma<div class="sidebar-logo-tagline">Painel Admin</div>
+                </div>
+            </a>
+            <nav class="sidebar-section">
+                <div class="sidebar-section-label">Principal</div>
+                <a href="dashboard.html" class="nav-link"><span class="nav-icon">📊</span> Dashboard</a>
+                <a href="users.html" class="nav-link"><span class="nav-icon">👥</span> Alunos</a>
+                <a href="courses.html" class="nav-link"><span class="nav-icon">📚</span> Cursos</a>
+                <a href="enrollments.html" class="nav-link"><span class="nav-icon">🎓</span> Matrículas</a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="sidebar-user">
+                    <div class="avatar" id="sidebar-avatar">A</div>
+                    <div class="sidebar-user-info">
+                        <div class="sidebar-user-name" id="sidebar-user-name">Carregando...</div>
+                        <div class="sidebar-user-role" id="sidebar-user-role">Admin</div>
+                    </div>
+                    <button id="logout-btn" title="Sair"
+                        style="background:none;border:none;cursor:pointer;font-size:1rem;padding:4px;color:var(--text-muted);">↩</button>
+                </div>
+            </div>
+        </aside>
+
+        <div class="main-wrapper">
+            <header class="topbar">
+                <button id="menu-toggle" class="btn btn-ghost btn-sm" style="display:none;">☰</button>
+                <div class="topbar-greeting">
+                    <div class="topbar-greeting-text">Gerenciamento de</div>
+                    <div class="topbar-greeting-name">Cursos &amp; Ebooks</div>
+                </div>
+                <div class="topbar-actions">
+                    <button id="btn-new-course" class="btn btn-primary">+ Novo Curso</button>
+                </div>
+            </header>
+
+            <main class="main-content">
+                <div class="page-header">
+                    <h1>Gerenciar Cursos</h1>
+                    <p>Crie e gerencie os cursos e ebooks da plataforma.</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">📚 Catálogo de Cursos</h2>
+                        <button class="btn btn-primary btn-sm"
+                            onclick="document.getElementById('btn-new-course').click()">+ Novo Curso</button>
+                    </div>
+                    <div class="card-body" style="padding: 0;">
+                        <div class="data-table-wrapper" style="border:none; box-shadow:none; border-radius:0;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Curso</th>
+                                        <th>Descrição</th>
+                                        <th>PDF</th>
+                                        <th>Status</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="courses-tbody">
+                                    <tr>
+                                        <td colspan="5"
+                                            style="text-align:center; padding:var(--space-8); color:var(--text-muted);">
+                                            Carregando...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- MODAL: Criar Curso -->
+    <div class="modal-overlay" id="modal-create-course">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-course-title"
+            style="max-width: 600px;">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modal-course-title">Criar Novo Curso</h3>
+                <button class="modal-close" id="modal-close-course" aria-label="Fechar">✕</button>
+            </div>
+            <form id="form-create-course" enctype="multipart/form-data">
+                <div class="modal-body" style="display:flex; flex-direction:column; gap:var(--space-5);">
+
+                    <div class="form-group">
+                        <label class="form-label" for="course-title">Título do Curso <span
+                                class="required">*</span></label>
+                        <input type="text" id="course-title" class="form-control"
+                            placeholder="Ex: Marketing Digital Avançado" required />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="course-description">Descrição / Sinopse</label>
+                        <textarea id="course-description" class="form-control"
+                            placeholder="Descreva o que o aluno vai aprender neste curso..." rows="3"></textarea>
+                    </div>
+
+                    <!-- Upload Capa -->
+                    <div class="form-group">
+                        <label class="form-label">Imagem de Capa</label>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="cover-file" accept=".jpg,.jpeg,.png,.webp" />
+                            <div class="file-input-display">
+                                <span class="file-icon">🖼</span>
+                                <div class="file-text">
+                                    <div class="file-name" id="cover-file-name">Clique para selecionar a capa</div>
+                                    <div class="file-hint">JPG, PNG ou WEBP — Recomendado: 1280×720px</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Upload PDF -->
+                    <div class="form-group">
+                        <label class="form-label">Arquivo PDF / Ebook <span class="required">*</span></label>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="pdf-file" accept=".pdf" required />
+                            <div class="file-input-display">
+                                <span class="file-icon">📄</span>
+                                <div class="file-text">
+                                    <div class="file-name" id="pdf-file-name">Clique para selecionar o PDF</div>
+                                    <div class="file-hint">Formato PDF — Será armazenado com segurança</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Erro -->
+                    <div id="create-course-error" class="hidden" style="
+          background: var(--error-light);
+          border: 1px solid var(--error-border);
+          border-radius: var(--radius-md);
+          padding: var(--space-3) var(--space-4);
+          font-size: var(--text-sm);
+          color: #991b1b;
+          display: none;
+        "></div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary"
+                        onclick="UI.closeModal('modal-create-course')">Cancelar</button>
+                    <button type="submit" id="btn-save-course" class="btn btn-primary">📤 Criar Curso</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script src="../../assets/js/config.js"></script>
+    <script src="../../assets/js/ui.js"></script>
+    <script src="../../assets/js/auth.js"></script>
+    <script src="../../assets/js/api.js"></script>
+    <script src="../../assets/js/admin-core.js"></script>
+    <script>
+        if (window.innerWidth <= 768) document.getElementById('menu-toggle').style.display = 'inline-flex';
+        AdminCore.initCourses();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard Admin — CursoPlataforma</title>
+    <meta name="description" content="Painel de controle administrativo da plataforma de cursos." />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../../assets/css/variables.css" />
+    <link rel="stylesheet" href="../../assets/css/base.css" />
+    <link rel="stylesheet" href="../../assets/css/components.css" />
+    <link rel="stylesheet" href="../../assets/css/layouts.css" />
+</head>
+
+<body>
+
+    <div class="app-layout">
+
+        <!-- ── SIDEBAR ── -->
+        <aside class="sidebar" id="sidebar">
+            <a href="dashboard.html" class="sidebar-logo">
+                <div class="sidebar-logo-icon">📚</div>
+                <div class="sidebar-logo-text">
+                    CursoPlataforma
+                    <div class="sidebar-logo-tagline">Painel Admin</div>
+                </div>
+            </a>
+
+            <nav class="sidebar-section">
+                <div class="sidebar-section-label">Principal</div>
+                <a href="dashboard.html" class="nav-link"><span class="nav-icon">📊</span> Dashboard</a>
+                <a href="users.html" class="nav-link"><span class="nav-icon">👥</span> Alunos</a>
+                <a href="courses.html" class="nav-link"><span class="nav-icon">📚</span> Cursos</a>
+                <a href="enrollments.html" class="nav-link"><span class="nav-icon">🎓</span> Matrículas</a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-user">
+                    <div class="avatar" id="sidebar-avatar">A</div>
+                    <div class="sidebar-user-info">
+                        <div class="sidebar-user-name" id="sidebar-user-name">Carregando...</div>
+                        <div class="sidebar-user-role" id="sidebar-user-role">Admin</div>
+                    </div>
+                    <button id="logout-btn" title="Sair"
+                        style="background:none; border:none; cursor:pointer; font-size:1rem; padding:4px; color: var(--text-muted);">↩</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ── ÁREA PRINCIPAL ── -->
+        <div class="main-wrapper">
+
+            <!-- Topbar -->
+            <header class="topbar">
+                <button id="menu-toggle" class="btn btn-ghost btn-sm" style="display:none;" aria-label="Menu">☰</button>
+                <div class="topbar-greeting">
+                    <div class="topbar-greeting-text">Bem-vindo de volta,</div>
+                    <div class="topbar-greeting-name" id="topbar-user-name">Admin</div>
+                </div>
+                <div class="topbar-actions">
+                    <a href="users.html" class="btn btn-primary btn-sm">+ Novo Aluno</a>
+                </div>
+            </header>
+
+            <!-- Conteúdo -->
+            <main class="main-content">
+
+                <!-- Page Header -->
+                <div class="page-header">
+                    <h1>Dashboard</h1>
+                    <p>Visão geral da plataforma em tempo real.</p>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="stats-grid" id="stats-grid" style="margin-bottom: var(--space-8);">
+                    <div class="stat-card">
+                        <div class="stat-card-icon">👥</div>
+                        <div class="stat-card-content">
+                            <div class="stat-card-label">Total de Alunos</div>
+                            <div class="stat-card-value" id="stat-students">
+                                <div class="skeleton skeleton-text" style="width:60px; height:2rem;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-icon">📚</div>
+                        <div class="stat-card-content">
+                            <div class="stat-card-label">Cursos Ativos</div>
+                            <div class="stat-card-value" id="stat-courses">
+                                <div class="skeleton skeleton-text" style="width:60px; height:2rem;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-icon">🎓</div>
+                        <div class="stat-card-content">
+                            <div class="stat-card-label">Matrículas Totais</div>
+                            <div class="stat-card-value" id="stat-enrollments">
+                                <div class="skeleton skeleton-text" style="width:60px; height:2rem;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ações Rápidas -->
+                <div class="two-col" style="margin-bottom: var(--space-8);">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">⚡ Ações Rápidas</h2>
+                        </div>
+                        <div class="card-body" style="display:flex; flex-direction:column; gap: var(--space-3);">
+                            <a href="users.html" class="btn btn-secondary">👤 Gerenciar Alunos</a>
+                            <a href="courses.html" class="btn btn-secondary">📚 Gerenciar Cursos</a>
+                            <a href="enrollments.html" class="btn btn-primary">🎓 Matricular Aluno</a>
+                        </div>
+                    </div>
+
+                    <!-- Matrículas Recentes -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">🕐 Matrículas Recentes</h2>
+                            <a href="enrollments.html" class="btn btn-ghost btn-sm">Ver todas →</a>
+                        </div>
+                        <div class="card-body" style="padding: 0;">
+                            <div class="data-table-wrapper" style="border:none; box-shadow:none;">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Aluno</th>
+                                            <th>Email</th>
+                                            <th>Curso</th>
+                                            <th>Data</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recent-enrollments-tbody">
+                                        <tr>
+                                            <td colspan="4"
+                                                style="text-align:center; padding: var(--space-6); color: var(--text-muted);">
+                                                Carregando...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script src="../../assets/js/config.js"></script>
+    <script src="../../assets/js/ui.js"></script>
+    <script src="../../assets/js/auth.js"></script>
+    <script src="../../assets/js/api.js"></script>
+    <script src="../../assets/js/admin-core.js"></script>
+    <script>
+        // Exibe toggle de menu em telas pequenas
+        if (window.innerWidth <= 768) {
+            document.getElementById('menu-toggle').style.display = 'inline-flex';
+        }
+        AdminCore.initDashboard();
+    </script>
+</body>
+
+</html>

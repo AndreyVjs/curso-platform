@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gerenciar Alunos — CursoPlataforma</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../../assets/css/variables.css" />
+    <link rel="stylesheet" href="../../assets/css/base.css" />
+    <link rel="stylesheet" href="../../assets/css/components.css" />
+    <link rel="stylesheet" href="../../assets/css/layouts.css" />
+</head>
+
+<body>
+
+    <div class="app-layout">
+        <!-- ── SIDEBAR ── -->
+        <aside class="sidebar" id="sidebar">
+            <a href="dashboard.html" class="sidebar-logo">
+                <div class="sidebar-logo-icon">📚</div>
+                <div class="sidebar-logo-text">CursoPlataforma<div class="sidebar-logo-tagline">Painel Admin</div>
+                </div>
+            </a>
+            <nav class="sidebar-section">
+                <div class="sidebar-section-label">Principal</div>
+                <a href="dashboard.html" class="nav-link"><span class="nav-icon">📊</span> Dashboard</a>
+                <a href="users.html" class="nav-link"><span class="nav-icon">👥</span> Alunos</a>
+                <a href="courses.html" class="nav-link"><span class="nav-icon">📚</span> Cursos</a>
+                <a href="enrollments.html" class="nav-link"><span class="nav-icon">🎓</span> Matrículas</a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="sidebar-user">
+                    <div class="avatar" id="sidebar-avatar">A</div>
+                    <div class="sidebar-user-info">
+                        <div class="sidebar-user-name" id="sidebar-user-name">Carregando...</div>
+                        <div class="sidebar-user-role" id="sidebar-user-role">Admin</div>
+                    </div>
+                    <button id="logout-btn" title="Sair"
+                        style="background:none;border:none;cursor:pointer;font-size:1rem;padding:4px;color:var(--text-muted);">↩</button>
+                </div>
+            </div>
+        </aside>
+
+        <div class="main-wrapper">
+            <header class="topbar">
+                <button id="menu-toggle" class="btn btn-ghost btn-sm" style="display:none;">☰</button>
+                <div class="topbar-greeting">
+                    <div class="topbar-greeting-text">Gerenciamento de</div>
+                    <div class="topbar-greeting-name">Alunos</div>
+                </div>
+                <div class="topbar-actions">
+                    <button id="btn-new-user" class="btn btn-primary">+ Novo Aluno</button>
+                </div>
+            </header>
+
+            <main class="main-content">
+                <div class="page-header">
+                    <h1>Gerenciar Alunos</h1>
+                    <p>Crie e gerencie as contas de acesso dos seus alunos.</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">👥 Lista de Alunos</h2>
+                        <button id="btn-new-user-2" class="btn btn-primary btn-sm"
+                            onclick="document.getElementById('btn-new-user').click()">
+                            + Novo Aluno
+                        </button>
+                    </div>
+                    <div class="card-body" style="padding: 0;">
+                        <div class="data-table-wrapper" style="border:none; box-shadow:none; border-radius:0;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Nome</th>
+                                        <th>Email</th>
+                                        <th>Cadastrado em</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-tbody">
+                                    <tr>
+                                        <td colspan="4"
+                                            style="text-align:center; padding: var(--space-8); color: var(--text-muted);">
+                                            Carregando...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- MODAL: Criar Aluno -->
+    <div class="modal-overlay" id="modal-create-user">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-user-title">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modal-user-title">Criar Novo Aluno</h3>
+                <button class="modal-close" id="modal-close-user" aria-label="Fechar">✕</button>
+            </div>
+            <form id="form-create-user">
+                <div class="modal-body" style="display:flex; flex-direction:column; gap:var(--space-5);">
+
+                    <!-- Aviso de segurança -->
+                    <div style="
+          background: var(--info-light);
+          border: 1px solid #bfdbfe;
+          border-radius: var(--radius-md);
+          padding: var(--space-3) var(--space-4);
+          font-size: var(--text-sm);
+          color: #1e40af;
+          display: flex;
+          align-items: flex-start;
+          gap: var(--space-2);
+        ">
+                        <span>ℹ️</span>
+                        <span>A conta é criada com segurança. Sua sessão de admin <strong>não será
+                                afetada</strong>.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="new-user-name">Nome Completo <span
+                                class="required">*</span></label>
+                        <input type="text" id="new-user-name" class="form-control" placeholder="Ex: Maria Silva"
+                            required autocomplete="off" />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="new-user-email">Email <span class="required">*</span></label>
+                        <input type="email" id="new-user-email" class="form-control" placeholder="aluno@email.com"
+                            required autocomplete="off" />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="new-user-password">Senha de Acesso <span
+                                class="required">*</span></label>
+                        <input type="text" id="new-user-password" class="form-control" placeholder="Mínimo 6 caracteres"
+                            required autocomplete="new-password" />
+                        <span class="form-hint">⚠️ Anote ou informe a senha ao aluno após criar a conta.</span>
+                    </div>
+
+                    <!-- Erro -->
+                    <div id="create-user-error" class="hidden" style="
+          background: var(--error-light);
+          border: 1px solid var(--error-border);
+          border-radius: var(--radius-md);
+          padding: var(--space-3) var(--space-4);
+          font-size: var(--text-sm);
+          color: #991b1b;
+          display: none;
+        "></div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary"
+                        onclick="UI.closeModal('modal-create-user')">Cancelar</button>
+                    <button type="submit" id="btn-save-user" class="btn btn-primary">✅ Criar Aluno</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script src="../../assets/js/config.js"></script>
+    <script src="../../assets/js/ui.js"></script>
+    <script src="../../assets/js/auth.js"></script>
+    <script src="../../assets/js/api.js"></script>
+    <script src="../../assets/js/admin-core.js"></script>
+    <script>
+        if (window.innerWidth <= 768) document.getElementById('menu-toggle').style.display = 'inline-flex';
+        AdminCore.initUsers();
+    </script>
+</body>
+
+</html>

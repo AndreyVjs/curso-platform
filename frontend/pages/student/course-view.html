@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Carregando Curso... — CursoPlataforma</title>
+    <meta name="description" content="Acesse e baixe o material completo deste curso." />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../../assets/css/variables.css" />
+    <link rel="stylesheet" href="../../assets/css/base.css" />
+    <link rel="stylesheet" href="../../assets/css/components.css" />
+    <link rel="stylesheet" href="../../assets/css/layouts.css" />
+</head>
+
+<body>
+
+    <div class="app-layout">
+
+        <!-- ── SIDEBAR ── -->
+        <aside class="sidebar" id="sidebar">
+            <a href="dashboard.html" class="sidebar-logo">
+                <div class="sidebar-logo-icon">📚</div>
+                <div class="sidebar-logo-text">
+                    CursoPlataforma
+                    <div class="sidebar-logo-tagline">Área do Aluno</div>
+                </div>
+            </a>
+
+            <nav class="sidebar-section">
+                <div class="sidebar-section-label">Minha Área</div>
+                <a href="dashboard.html" class="nav-link"><span class="nav-icon">🏠</span> Meus Cursos</a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-user">
+                    <div class="avatar" id="sidebar-avatar">A</div>
+                    <div class="sidebar-user-info">
+                        <div class="sidebar-user-name" id="sidebar-user-name">Carregando...</div>
+                        <div class="sidebar-user-role" id="sidebar-user-role">Aluno</div>
+                    </div>
+                    <button id="logout-btn" title="Sair"
+                        style="background:none;border:none;cursor:pointer;font-size:1rem;padding:4px;color:var(--text-muted);">↩</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ── ÁREA PRINCIPAL ── -->
+        <div class="main-wrapper">
+
+            <!-- Topbar -->
+            <header class="topbar">
+                <button id="menu-toggle" class="btn btn-ghost btn-sm" style="display:none;" aria-label="Menu">☰</button>
+                <div class="topbar-greeting">
+                    <a href="dashboard.html" class="btn btn-ghost btn-sm">← Meus Cursos</a>
+                </div>
+                <div class="topbar-actions">
+                    <div id="topbar-greeting-name" class="text-secondary text-sm"></div>
+                </div>
+            </header>
+
+            <!-- Conteúdo -->
+            <main class="main-content">
+
+                <!-- Skeleton de carregamento -->
+                <div id="course-title-skeleton" style="margin-bottom: var(--space-8);">
+                    <div class="skeleton skeleton-text"
+                        style="width: 60%; height: 2.5rem; margin-bottom: var(--space-4);"></div>
+                    <div class="course-view-layout">
+                        <div class="skeleton skeleton-card" style="aspect-ratio: 3/4;"></div>
+                        <div style="display:flex; flex-direction:column; gap: var(--space-4);">
+                            <div class="skeleton skeleton-text" style="width: 80%;"></div>
+                            <div class="skeleton skeleton-text" style="width: 60%;"></div>
+                            <div class="skeleton skeleton-text" style="width: 90%;"></div>
+                            <div class="skeleton skeleton-text" style="width: 70%;"></div>
+                            <div class="skeleton skeleton-card" style="height: 80px; margin-top: var(--space-4);"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Conteúdo real (escondido até carregar) -->
+                <div id="course-content" class="hidden">
+
+                    <!-- Breadcrumb -->
+                    <div
+                        style="display:flex; align-items:center; gap: var(--space-2); margin-bottom: var(--space-6); font-size: var(--text-sm); color: var(--text-secondary);">
+                        <a href="dashboard.html" style="color: var(--primary); text-decoration:none;">📚 Meus Cursos</a>
+                        <span>/</span>
+                        <span id="course-title-breadcrumb" class="truncate" style="max-width: 300px;">...</span>
+                    </div>
+
+                    <!-- Layout Principal -->
+                    <div id="course-details" class="course-view-layout">
+
+                        <!-- Capa do Curso -->
+                        <div class="course-view-cover">
+                            <img id="course-cover-img" alt="Capa do Curso" style="display:none;" />
+                            <div id="course-cover-placeholder" class="course-view-cover-placeholder">
+                                <span>📚</span>
+                            </div>
+                        </div>
+
+                        <!-- Detalhes e Download -->
+                        <div class="course-view-details">
+
+                            <!-- Tags -->
+                            <div style="display:flex; gap: var(--space-2); flex-wrap: wrap;">
+                                <span class="badge badge-success">✅ Acesso Liberado</span>
+                                <span class="badge badge-primary">📚 Ebook</span>
+                            </div>
+
+                            <!-- Título -->
+                            <h1 id="course-title" class="course-view-title">Carregando...</h1>
+
+                            <!-- Descrição -->
+                            <div style="border-left: 3px solid var(--primary-light); padding-left: var(--space-4);">
+                                <h2
+                                    style="font-size: var(--text-base); font-weight: var(--weight-semibold); color: var(--text-secondary); margin-bottom: var(--space-2);">
+                                    Sobre este material:</h2>
+                                <p id="course-description" class="course-view-description">Carregando descrição...</p>
+                            </div>
+
+                            <!-- CTA de Download -->
+                            <div class="download-cta-box">
+                                <div style="text-align: center; margin-bottom: var(--space-2);">
+                                    <h3
+                                        style="font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--primary);">
+                                        📥 Material disponível para download
+                                    </h3>
+                                    <p
+                                        style="font-size: var(--text-sm); color: var(--text-secondary); margin-top: var(--space-1);">
+                                        Acesse o conteúdo completo em PDF logo abaixo.
+                                    </p>
+                                </div>
+
+                                <button id="download-btn" class="download-btn">
+                                    <span class="download-btn-icon">📥</span>
+                                    <span>Baixar E-book Completo (PDF)</span>
+                                </button>
+
+                                <div class="download-note">
+                                    <span>🔒</span>
+                                    <span>Link de download seguro e temporário. Gerado na hora.</span>
+                                </div>
+                            </div>
+
+                            <!-- Informações extras -->
+                            <div class="card" style="background: var(--bg-secondary);">
+                                <div class="card-body" style="padding: var(--space-4);">
+                                    <h3
+                                        style="font-size: var(--text-sm); font-weight: var(--weight-semibold); margin-bottom: var(--space-3); color: var(--text-secondary);">
+                                        ℹ️ INFORMAÇÕES</h3>
+                                    <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+                                        <div
+                                            style="display:flex; justify-content:space-between; font-size: var(--text-sm);">
+                                            <span style="color: var(--text-secondary);">Formato:</span>
+                                            <span style="font-weight: var(--weight-medium);">PDF Digital</span>
+                                        </div>
+                                        <div
+                                            style="display:flex; justify-content:space-between; font-size: var(--text-sm);">
+                                            <span style="color: var(--text-secondary);">Acesso:</span>
+                                            <span
+                                                style="font-weight: var(--weight-medium); color: var(--success);">Liberado
+                                                ✅</span>
+                                        </div>
+                                        <div
+                                            style="display:flex; justify-content:space-between; font-size: var(--text-sm);">
+                                            <span style="color: var(--text-secondary);">Validade do link:</span>
+                                            <span style="font-weight: var(--weight-medium);">60 segundos (por
+                                                segurança)</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div><!-- / course-view-details -->
+                    </div><!-- / course-details -->
+                </div><!-- / course-content -->
+
+            </main>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script src="../../assets/js/config.js"></script>
+    <script src="../../assets/js/ui.js"></script>
+    <script src="../../assets/js/auth.js"></script>
+    <script src="../../assets/js/api.js"></script>
+    <script src="../../assets/js/student-core.js"></script>
+    <script>
+        if (window.innerWidth <= 768) document.getElementById('menu-toggle').style.display = 'inline-flex';
+
+        // Atualiza breadcrumb quando o título do curso carrega
+        const titleEl = document.getElementById('course-title');
+        const breadcrumbEl = document.getElementById('course-title-breadcrumb');
+
+        const observer = new MutationObserver(() => {
+            if (titleEl.textContent && titleEl.textContent !== 'Carregando...') {
+                breadcrumbEl.textContent = titleEl.textContent;
+                observer.disconnect();
+            }
+        });
+        observer.observe(titleEl, { childList: true, subtree: true, characterData: true });
+
+        StudentCore.initCourseView();
+    </script>
+</body>
+
+</html>

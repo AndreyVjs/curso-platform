@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Matrículas — CursoPlataforma</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../../assets/css/variables.css" />
+    <link rel="stylesheet" href="../../assets/css/base.css" />
+    <link rel="stylesheet" href="../../assets/css/components.css" />
+    <link rel="stylesheet" href="../../assets/css/layouts.css" />
+</head>
+
+<body>
+
+    <div class="app-layout">
+        <!-- ── SIDEBAR ── -->
+        <aside class="sidebar" id="sidebar">
+            <a href="dashboard.html" class="sidebar-logo">
+                <div class="sidebar-logo-icon">📚</div>
+                <div class="sidebar-logo-text">CursoPlataforma<div class="sidebar-logo-tagline">Painel Admin</div>
+                </div>
+            </a>
+            <nav class="sidebar-section">
+                <div class="sidebar-section-label">Principal</div>
+                <a href="dashboard.html" class="nav-link"><span class="nav-icon">📊</span> Dashboard</a>
+                <a href="users.html" class="nav-link"><span class="nav-icon">👥</span> Alunos</a>
+                <a href="courses.html" class="nav-link"><span class="nav-icon">📚</span> Cursos</a>
+                <a href="enrollments.html" class="nav-link"><span class="nav-icon">🎓</span> Matrículas</a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="sidebar-user">
+                    <div class="avatar" id="sidebar-avatar">A</div>
+                    <div class="sidebar-user-info">
+                        <div class="sidebar-user-name" id="sidebar-user-name">Carregando...</div>
+                        <div class="sidebar-user-role" id="sidebar-user-role">Admin</div>
+                    </div>
+                    <button id="logout-btn" title="Sair"
+                        style="background:none;border:none;cursor:pointer;font-size:1rem;padding:4px;color:var(--text-muted);">↩</button>
+                </div>
+            </div>
+        </aside>
+
+        <div class="main-wrapper">
+            <header class="topbar">
+                <button id="menu-toggle" class="btn btn-ghost btn-sm" style="display:none;">☰</button>
+                <div class="topbar-greeting">
+                    <div class="topbar-greeting-text">Gerenciamento de</div>
+                    <div class="topbar-greeting-name">Matrículas &amp; Acessos</div>
+                </div>
+            </header>
+
+            <main class="main-content">
+                <div class="page-header">
+                    <h1>Matrículas</h1>
+                    <p>Libere o acesso de alunos a cursos específicos.</p>
+                </div>
+
+                <!-- Card: Liberar Acesso -->
+                <div class="card" style="margin-bottom: var(--space-8);">
+                    <div class="card-header">
+                        <h2 class="card-title">🎓 Liberar Acesso a Curso</h2>
+                    </div>
+                    <div class="card-body">
+                        <form id="form-enroll" style="display:flex; flex-direction:column; gap: var(--space-5);">
+
+                            <div class="two-col" style="align-items: end; gap: var(--space-5);">
+                                <div class="form-group">
+                                    <label class="form-label" for="enroll-student">Selecione o Aluno <span
+                                            class="required">*</span></label>
+                                    <select id="enroll-student" class="form-control" required>
+                                        <option value="">— Carregando alunos... —</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="enroll-course">Selecione o Curso <span
+                                            class="required">*</span></label>
+                                    <select id="enroll-course" class="form-control" required>
+                                        <option value="">— Carregando cursos... —</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Erro -->
+                            <div id="enroll-error" class="hidden" style="
+              background: var(--error-light);
+              border: 1px solid var(--error-border);
+              border-radius: var(--radius-md);
+              padding: var(--space-3) var(--space-4);
+              font-size: var(--text-sm);
+              color: #991b1b;
+              display: none;
+            "></div>
+
+                            <!-- Info -->
+                            <div style="
+              background: var(--success-light);
+              border: 1px solid var(--success-border);
+              border-radius: var(--radius-md);
+              padding: var(--space-3) var(--space-4);
+              font-size: var(--text-sm);
+              color: #065f46;
+              display: flex;
+              align-items: flex-start;
+              gap: var(--space-2);
+            ">
+                                <span>✅</span>
+                                <span>Ao clicar em "Liberar Acesso", o aluno selecionado poderá acessar o curso
+                                    imediatamente em sua área.</span>
+                            </div>
+
+                            <div>
+                                <button type="submit" id="btn-enroll" class="btn btn-primary btn-lg">
+                                    🔓 Liberar Acesso ao Curso
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Card: Lista de Matrículas -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">📋 Histórico de Matrículas</h2>
+                    </div>
+                    <div class="card-body" style="padding: 0;">
+                        <div class="data-table-wrapper" style="border:none; box-shadow:none; border-radius:0;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Aluno</th>
+                                        <th>Email</th>
+                                        <th>Curso</th>
+                                        <th>Data</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="enrollments-tbody">
+                                    <tr>
+                                        <td colspan="5"
+                                            style="text-align:center; padding:var(--space-8); color:var(--text-muted);">
+                                            Carregando...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script src="../../assets/js/config.js"></script>
+    <script src="../../assets/js/ui.js"></script>
+    <script src="../../assets/js/auth.js"></script>
+    <script src="../../assets/js/api.js"></script>
+    <script src="../../assets/js/admin-core.js"></script>
+    <script>
+        if (window.innerWidth <= 768) document.getElementById('menu-toggle').style.display = 'inline-flex';
+        AdminCore.initEnrollments();
+    </script>
+</body>
+
+</html>

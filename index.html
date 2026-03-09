@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CursoPlataforma — Área de Membros</title>
+  <meta name="description" content="Acesse sua plataforma de cursos e ebooks." />
+
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="frontend/assets/css/variables.css" />
+  <link rel="stylesheet" href="frontend/assets/css/base.css" />
+
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: var(--bg-main);
+    }
+    .redirect-container {
+      text-align: center;
+      color: var(--text-secondary);
+    }
+    .redirect-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border-color);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto var(--space-4);
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="redirect-container">
+    <div class="redirect-spinner"></div>
+    <p>Verificando sessão...</p>
+  </div>
+
+  <script src="frontend/assets/js/config.js"></script>
+  <script src="frontend/assets/js/ui.js"></script>
+  <script src="frontend/assets/js/auth.js"></script>
+  <script>
+    (async () => {
+      const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+      const { data: { session } } = await sb.auth.getSession();
+
+      if (!session) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      // Busca role do perfil
+      const { data: profile } = await sb
+        .from('users')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+
+      if (!profile) {
+        await sb.auth.signOut();
+        window.location.href = 'login.html';
+        return;
+      }
+
+      if (profile.role === 'admin') {
+        window.location.href = 'frontend/pages/admin/dashboard.html';
+      } else {
+        window.location.href = 'frontend/pages/student/dashboard.html';
+      }
+    })();
+  </script>
+</body>
+</html>
