@@ -78,7 +78,7 @@ BEGIN
 
     -- ── PASSO 3: Criar usuário diretamente em auth.users ─────
     -- Gera um UUID para o novo usuário
-    v_new_user_id := uuid_generate_v4();
+    v_new_user_id := gen_random_uuid();
 
     -- Hash da senha usando bcrypt (função nativa do Supabase/pgcrypto)
     v_hashed_pw := crypt(p_password, gen_salt('bf'));

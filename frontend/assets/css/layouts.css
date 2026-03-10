@@ -162,9 +162,7 @@
    ============================================================ */
 
 .app-layout {
-    display: grid;
-    grid-template-columns: var(--sidebar-width) 1fr;
-    grid-template-rows: 1fr;
+    display: flex;
     min-height: 100vh;
 }
 
@@ -371,6 +369,7 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    flex: 1;
     background: var(--bg-main);
 }
 
