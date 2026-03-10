@@ -55,45 +55,28 @@
             </header>
 
             <main class="main-content">
-                <div class="page-header">
-                    <h1>Gerenciar Cursos</h1>
-                    <p>Crie e gerencie os cursos e ebooks da plataforma.</p>
+                <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+                    <div>
+                        <h1>Gerenciar Cursos</h1>
+                        <p>Crie, edite e gerencie os cursos e ebooks da plataforma.</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="document.getElementById('btn-new-course').click()">
+                        + Novo Curso
+                    </button>
                 </div>
 
-                <div class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">📚 Catálogo de Cursos</h2>
-                        <button class="btn btn-primary btn-sm"
-                            onclick="document.getElementById('btn-new-course').click()">+ Novo Curso</button>
-                    </div>
-                    <div class="card-body" style="padding: 0;">
-                        <div class="data-table-wrapper" style="border:none; box-shadow:none; border-radius:0;">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Curso</th>
-                                        <th>Descrição</th>
-                                        <th>PDF</th>
-                                        <th>Status</th>
-                                        <th>Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="courses-tbody">
-                                    <tr>
-                                        <td colspan="5"
-                                            style="text-align:center; padding:var(--space-8); color:var(--text-muted);">
-                                            Carregando...</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                <!-- Grid de Cards de Cursos -->
+                <div class="courses-grid" id="courses-grid"
+                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--space-6);">
+                    <div
+                        style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--text-muted);">
+                        Carregando...</div>
                 </div>
             </main>
         </div>
     </div>
 
-    <!-- MODAL: Criar Curso -->
+    <!-- MODAL: Criar/Editar Curso -->
     <div class="modal-overlay" id="modal-create-course">
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-course-title"
             style="max-width: 600px;">
@@ -102,6 +85,7 @@
                 <button class="modal-close" id="modal-close-course" aria-label="Fechar">✕</button>
             </div>
             <form id="form-create-course" enctype="multipart/form-data">
+                <input type="hidden" id="edit-course-id" value="">
                 <div class="modal-body" style="display:flex; flex-direction:column; gap:var(--space-5);">
 
                     <div class="form-group">
@@ -134,9 +118,10 @@
 
                     <!-- Upload PDF -->
                     <div class="form-group">
-                        <label class="form-label">Arquivo PDF / Ebook <span class="required">*</span></label>
+                        <label class="form-label">Arquivo PDF / Ebook <span id="pdf-req"
+                                class="required">*</span></label>
                         <div class="file-input-wrapper">
-                            <input type="file" id="pdf-file" accept=".pdf" required />
+                            <input type="file" id="pdf-file" accept=".pdf" />
                             <div class="file-input-display">
                                 <span class="file-icon">📄</span>
                                 <div class="file-text">
@@ -162,7 +147,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary"
                         onclick="UI.closeModal('modal-create-course')">Cancelar</button>
-                    <button type="submit" id="btn-save-course" class="btn btn-primary">📤 Criar Curso</button>
+                    <button type="submit" id="btn-save-course" class="btn btn-primary">📤 Salvar Curso</button>
                 </div>
             </form>
         </div>

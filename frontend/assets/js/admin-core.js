@@ -124,6 +124,12 @@ const AdminCore = (() => {
 
         // Botão para abrir modal de criação
         document.getElementById('btn-new-user')?.addEventListener('click', () => {
+            document.getElementById('edit-user-id').value = '';
+            document.getElementById('modal-user-title').textContent = 'Criar Novo Aluno';
+            document.getElementById('btn-save-user').textContent = '✅ Criar Aluno';
+            document.getElementById('pwd-req').style.display = 'inline';
+            document.getElementById('pwd-hint').textContent = '⚠️ Anote ou informe a senha ao aluno após criar a conta.';
+
             UI.openModal('modal-create-user');
             document.getElementById('form-create-user')?.reset();
             clearFormError('create-user-error');
@@ -142,84 +148,106 @@ const AdminCore = (() => {
     }
 
     async function loadUsers() {
-        const tbody = document.getElementById('users-tbody');
-        if (!tbody) return;
+        const grid = document.getElementById('users-grid');
+        if (!grid) return;
 
-        UI.renderSkeletonRows(tbody, 4, 5);
+        grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--text-muted);">Carregando alunos...</div>';
 
         try {
             const users = await API.listStudents();
 
             if (!users.length) {
-                tbody.innerHTML = `
-          <tr><td colspan="4">
-            <div class="table-empty">
-              <div class="empty-icon">👥</div>
-              <div class="empty-title">Nenhum aluno cadastrado</div>
-              <p>Clique em "Novo Aluno" para adicionar.</p>
-            </div>
-          </td></tr>`;
+                grid.innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: var(--space-12) var(--space-6); background: var(--bg-white); border: 1px dashed var(--border-color); border-radius: var(--radius-lg);">
+                    <div style="font-size: 3rem; margin-bottom: var(--space-3); opacity: 0.5;">👥</div>
+                    <div style="font-family: var(--font-heading); font-weight: var(--weight-semibold); color: var(--text-primary); margin-bottom: var(--space-2);">Nenhum aluno cadastrado</div>
+                    <p style="color: var(--text-secondary);">Clique em "Novo Aluno" para adicionar.</p>
+                </div>`;
                 return;
             }
 
-            tbody.innerHTML = users.map(u => `
-        <tr>
-          <td>
-            <div style="display:flex; align-items:center; gap: var(--space-3);">
-              <div class="avatar">${UI.initials(u.full_name)}</div>
-              <div>
-                <div style="font-weight: var(--weight-medium);">${UI.escapeHtml(u.full_name)}</div>
-              </div>
+            grid.innerHTML = users.map(u => `
+            <div class="card" style="display: flex; flex-direction: column; height: 100%;">
+                <div class="card-body" style="flex: 1; display:flex; flex-direction:column; align-items:center; text-align:center; gap:var(--space-4);">
+                    <div class="avatar" style="width: 64px; height: 64px; font-size: 1.5rem; background: linear-gradient(135deg, var(--primary), var(--primary-hover)); display: flex; align-items: center; justify-content: center; color: white; border-radius: 50%;">${UI.initials(u.full_name)}</div>
+                    <div>
+                        <h3 style="font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); margin-bottom: 2px;">${UI.escapeHtml(u.full_name)}</h3>
+                        <p style="color: var(--text-secondary); font-size: var(--text-sm);">${UI.escapeHtml(u.email)}</p>
+                    </div>
+                    <div style="font-size: var(--text-xs); color: var(--text-muted); background: var(--bg-secondary); padding: 4px 12px; border-radius: 12px;">
+                        Cadastrado em ${UI.formatDate(u.created_at)}
+                    </div>
+                </div>
+                <div class="card-footer" style="display:flex; gap:var(--space-2); justify-content:center; background:var(--bg-secondary); padding:var(--space-4);">
+                    <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="AdminCore.editUser('${u.id}', '${UI.escapeHtml(u.full_name)}', '${UI.escapeHtml(u.email)}')">
+                        ✏️ Editar
+                    </button>
+                    <button class="btn btn-danger btn-sm" style="flex:1;" onclick="AdminCore.confirmDeleteUser('${u.id}', '${UI.escapeHtml(u.full_name)}')">
+                        🗑 Remover
+                    </button>
+                </div>
             </div>
-          </td>
-          <td>${UI.escapeHtml(u.email)}</td>
-          <td>${UI.formatDate(u.created_at)}</td>
-          <td>
-            <button
-              class="btn btn-danger btn-sm"
-              onclick="AdminCore.confirmDeleteUser('${u.id}', '${UI.escapeHtml(u.full_name)}')"
-              title="Remover aluno"
-            >🗑 Remover</button>
-          </td>
-        </tr>
-      `).join('');
+            `).join('');
 
         } catch (err) {
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color: var(--error); padding: var(--space-6);">Erro: ${UI.escapeHtml(err.message)}</td></tr>`;
+            grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; color: var(--error); padding: var(--space-6);">Erro: ${UI.escapeHtml(err.message)}</div>`;
         }
     }
 
     async function handleCreateUser() {
         const btn = document.getElementById('btn-save-user');
+        const userId = document.getElementById('edit-user-id').value;
         const fullName = document.getElementById('new-user-name').value.trim();
         const email = document.getElementById('new-user-email').value.trim();
         const password = document.getElementById('new-user-password').value;
 
         clearFormError('create-user-error');
 
-        if (!fullName || !email || !password) {
+        if (!fullName || !email || (!userId && !password)) {
             showFormError('create-user-error', 'Preencha todos os campos obrigatórios.');
             return;
         }
 
-        if (password.length < 6) {
+        if (password && password.length < 6) {
             showFormError('create-user-error', 'A senha deve ter no mínimo 6 caracteres.');
             return;
         }
 
-        UI.setButtonLoading(btn, 'Criando conta...');
+        UI.setButtonLoading(btn, userId ? 'Salvando...' : 'Criando conta...');
 
         try {
-            await API.createUser({ email, password, full_name: fullName, role: 'student' });
+            if (userId) {
+                // Modo Edição
+                await API.updateUser(userId, { full_name: fullName, email, password });
+                UI.toastSuccess(`Dados de "${fullName}" atualizados com sucesso!`);
+            } else {
+                // Modo Criação
+                await API.createUser({ email, password, full_name: fullName, role: 'student' });
+                UI.toastSuccess(`Aluno "${fullName}" registrado com sucesso! Acesso gerado.`);
+            }
 
             UI.closeModal('modal-create-user');
-            UI.toastSuccess(`Aluno "${fullName}" registrado com sucesso! Acesso gerado.`);
             await loadUsers(); // Atualiza a lista
 
         } catch (err) {
             UI.resetButton(btn);
             showFormError('create-user-error', err.message);
         }
+    }
+
+    function editUser(id, name, email) {
+        document.getElementById('edit-user-id').value = id;
+        document.getElementById('new-user-name').value = name;
+        document.getElementById('new-user-email').value = email;
+        document.getElementById('new-user-password').value = '';
+
+        document.getElementById('modal-user-title').textContent = 'Editar Aluno';
+        document.getElementById('btn-save-user').textContent = '✅ Salvar Alterações';
+        document.getElementById('pwd-req').style.display = 'none';
+        document.getElementById('pwd-hint').textContent = 'ℹ️ Deixe em branco para manter a senha atual.';
+
+        clearFormError('create-user-error');
+        UI.openModal('modal-create-user');
     }
 
     async function confirmDeleteUser(userId, userName) {
@@ -247,6 +275,11 @@ const AdminCore = (() => {
 
         // Abrir modal
         document.getElementById('btn-new-course')?.addEventListener('click', () => {
+            document.getElementById('edit-course-id').value = '';
+            document.getElementById('modal-course-title').textContent = 'Criar Novo Curso';
+            document.getElementById('btn-save-course').textContent = '📤 Criar Curso';
+            document.getElementById('pdf-req').style.display = 'inline';
+
             UI.openModal('modal-create-course');
             document.getElementById('form-create-course')?.reset();
             resetFileInputs();
@@ -308,6 +341,7 @@ const AdminCore = (() => {
 
     async function handleCreateCourse() {
         const btn = document.getElementById('btn-save-course');
+        const courseId = document.getElementById('edit-course-id').value;
         const title = document.getElementById('course-title').value.trim();
         const description = document.getElementById('course-description').value.trim();
         const coverFile = document.getElementById('cover-file').files[0] || null;
@@ -320,13 +354,23 @@ const AdminCore = (() => {
             return;
         }
 
-        UI.setButtonLoading(btn, 'Enviando arquivos...');
+        if (!courseId && !pdfFile) {
+            showFormError('create-course-error', 'O arquivo PDF é obrigatório para novos cursos.');
+            return;
+        }
+
+        UI.setButtonLoading(btn, courseId ? 'Salvando...' : 'Enviando arquivos...');
 
         try {
-            const course = await API.createCourse({ title, description, coverFile, pdfFile });
+            if (courseId) {
+                await API.updateCourse(courseId, { title, description, coverFile, pdfFile });
+                UI.toastSuccess(`Curso "${title}" atualizado com sucesso!`);
+            } else {
+                await API.createCourse({ title, description, coverFile, pdfFile });
+                UI.toastSuccess(`Curso "${title}" criado com sucesso!`);
+            }
 
             UI.closeModal('modal-create-course');
-            UI.toastSuccess(`Curso "${course.title}" criado com sucesso!`);
             await loadCourses();
 
         } catch (err) {
@@ -336,61 +380,64 @@ const AdminCore = (() => {
     }
 
     async function loadCourses() {
-        const tbody = document.getElementById('courses-tbody');
-        if (!tbody) return;
+        const grid = document.getElementById('courses-grid');
+        if (!grid) return;
 
-        UI.renderSkeletonRows(tbody, 5, 4);
+        grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--text-muted);">Carregando cursos...</div>';
 
         try {
             const courses = await API.listCourses();
 
             if (!courses.length) {
-                tbody.innerHTML = `
-          <tr><td colspan="5">
-            <div class="table-empty">
-              <div class="empty-icon">📚</div>
-              <div class="empty-title">Nenhum curso criado ainda</div>
-              <p>Clique em "Novo Curso" para começar.</p>
-            </div>
-          </td></tr>`;
+                grid.innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: var(--space-12) var(--space-6); background: var(--bg-white); border: 1px dashed var(--border-color); border-radius: var(--radius-lg);">
+                    <div style="font-size: 3rem; margin-bottom: var(--space-3); opacity: 0.5;">📚</div>
+                    <div style="font-family: var(--font-heading); font-weight: var(--weight-semibold); color: var(--text-primary); margin-bottom: var(--space-2);">Nenhum curso criado ainda</div>
+                    <p style="color: var(--text-secondary);">Clique em "Novo Curso" para começar.</p>
+                </div>`;
                 return;
             }
 
-            tbody.innerHTML = courses.map(c => `
-        <tr>
-          <td>
-            <div style="display:flex; align-items:center; gap: var(--space-3);">
-              ${c.cover_image_path
-                    ? `<img src="${API.getCoverUrl(c.cover_image_path)}" alt="Capa" style="width:48px; height:36px; object-fit:cover; border-radius: var(--radius-sm);" />`
-                    : `<div style="width:48px; height:36px; background: var(--primary-light); border-radius: var(--radius-sm); display:flex; align-items:center; justify-content:center; font-size:1rem;">📚</div>`
+            grid.innerHTML = courses.map(c => `
+            <div class="course-card">
+                <div class="course-card-cover">
+                    ${c.cover_image_path
+                    ? `<img src="${API.getCoverUrl(c.cover_image_path)}" alt="Capa" />`
+                    : `<div class="course-card-cover-placeholder">📚</div>`
                 }
-              <span style="font-weight: var(--weight-medium);">${UI.escapeHtml(c.title)}</span>
+                </div>
+                <div class="course-card-body">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <h3 class="course-card-title">${UI.escapeHtml(c.title)}</h3>
+                        <span class="badge ${c.active ? 'badge-success' : 'badge-neutral'}" style="margin-left:8px;">
+                            ${c.active ? 'Ativo' : 'Inativo'}
+                        </span>
+                    </div>
+                    <p class="course-card-description">${UI.truncate(c.description, 80) || 'Sem descrição'}</p>
+                    <div style="margin-top:auto;">
+                        <span class="badge ${c.pdf_file_path ? 'badge-primary' : 'badge-neutral'}">
+                            ${c.pdf_file_path ? '📄 PDF Anexado' : '⚠️ Sem PDF'}
+                        </span>
+                    </div>
+                </div>
+                <div class="course-card-footer" style="display:flex; flex-direction:column; gap:var(--space-2);">
+                    <div style="display:flex; gap:var(--space-2);">
+                        <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="AdminCore.editCourse('${c.id}')">
+                            ✏️ Editar
+                        </button>
+                        <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="AdminCore.toggleCourse('${c.id}', ${!c.active})">
+                            ${c.active ? '🔴 Desativar' : '🟢 Ativar'}
+                        </button>
+                    </div>
+                    <button class="btn btn-danger btn-sm btn-block" onclick="AdminCore.confirmDeleteCourse('${c.id}', '${UI.escapeHtml(c.title)}')">
+                        🗑 Excluir
+                    </button>
+                </div>
             </div>
-          </td>
-          <td>${UI.truncate(c.description, 80) || '<span style="color:var(--text-muted)">Sem descrição</span>'}</td>
-          <td>
-            <span class="badge ${c.pdf_file_path ? 'badge-success' : 'badge-neutral'}">
-              ${c.pdf_file_path ? '✅ PDF' : '⚠️ Sem PDF'}
-            </span>
-          </td>
-          <td>
-            <span class="badge ${c.active ? 'badge-success' : 'badge-neutral'}">
-              ${c.active ? 'Ativo' : 'Inativo'}
-            </span>
-          </td>
-          <td style="display:flex; gap: var(--space-2); flex-wrap: wrap;">
-            <button class="btn btn-secondary btn-sm" onclick="AdminCore.toggleCourse('${c.id}', ${!c.active})">
-              ${c.active ? '🔴 Desativar' : '🟢 Ativar'}
-            </button>
-            <button class="btn btn-danger btn-sm" onclick="AdminCore.confirmDeleteCourse('${c.id}', '${UI.escapeHtml(c.title)}')">
-              🗑
-            </button>
-          </td>
-        </tr>
-      `).join('');
+            `).join('');
 
         } catch (err) {
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--error); padding: var(--space-6);">Erro: ${UI.escapeHtml(err.message)}</td></tr>`;
+            grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; color: var(--error); padding: var(--space-6);">Erro: ${UI.escapeHtml(err.message)}</div>`;
         }
     }
 
@@ -401,6 +448,26 @@ const AdminCore = (() => {
             await loadCourses();
         } catch (err) {
             UI.toastError('Erro: ' + err.message);
+        }
+    }
+
+    async function editCourse(courseId) {
+        try {
+            const course = await API.getCourse(courseId);
+
+            document.getElementById('edit-course-id').value = course.id;
+            document.getElementById('course-title').value = course.title;
+            document.getElementById('course-description').value = course.description || '';
+
+            document.getElementById('modal-course-title').textContent = 'Editar Curso';
+            document.getElementById('btn-save-course').textContent = '📤 Salvar Alterações';
+            document.getElementById('pdf-req').style.display = 'none';
+
+            resetFileInputs();
+            clearFormError('create-course-error');
+            UI.openModal('modal-create-course');
+        } catch (err) {
+            UI.toastError('Erro ao carregar dados do curso: ' + err.message);
         }
     }
 
@@ -489,42 +556,58 @@ const AdminCore = (() => {
     }
 
     async function loadEnrollments() {
-        const tbody = document.getElementById('enrollments-tbody');
-        if (!tbody) return;
+        const grid = document.getElementById('enrollments-grid');
+        if (!grid) return;
 
-        UI.renderSkeletonRows(tbody, 5, 4);
+        grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted);">Carregando matrículas...</div>';
 
         try {
             const enrollments = await API.listEnrollments();
 
             if (!enrollments.length) {
-                tbody.innerHTML = `
-          <tr><td colspan="5">
-            <div class="table-empty">
-              <div class="empty-icon">🎓</div>
-              <div class="empty-title">Nenhuma matrícula registrada</div>
-            </div>
-          </td></tr>`;
+                grid.innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); background: var(--bg-secondary); border-radius: var(--radius-lg);">
+                    <div style="font-size: 2.5rem; margin-bottom: var(--space-3); opacity: 0.5;">🎓</div>
+                    <div style="font-family: var(--font-heading); font-weight: var(--weight-semibold); color: var(--text-primary); margin-bottom: var(--space-2);">Nenhuma matrícula registrada</div>
+                </div>`;
                 return;
             }
 
-            tbody.innerHTML = enrollments.map(e => `
-        <tr>
-          <td>${UI.escapeHtml(e.users?.full_name || '—')}</td>
-          <td>${UI.escapeHtml(e.users?.email || '—')}</td>
-          <td>${UI.escapeHtml(e.courses?.title || '—')}</td>
-          <td>${UI.formatDate(e.granted_at)}</td>
-          <td>
-            <button
-              class="btn btn-danger btn-sm"
-              onclick="AdminCore.confirmUnenroll('${e.id}', '${UI.escapeHtml(e.users?.full_name || '')}', '${UI.escapeHtml(e.courses?.title || '')}')"
-            >🔒 Revogar</button>
-          </td>
-        </tr>
-      `).join('');
+            grid.innerHTML = enrollments.map(e => `
+            <div class="card" style="display:flex; flex-direction:column; border: 1px solid var(--border-color); border-radius: var(--radius-lg); overflow:hidden;">
+                <div style="padding: var(--space-4) var(--space-5); background: var(--bg-secondary); border-bottom: 1px solid var(--border-color); display:flex; align-items:center; gap:var(--space-3);">
+                    <div class="avatar" style="width:40px;height:40px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;border-radius:50%;font-weight:bold;">
+                        ${UI.initials(e.users?.full_name || 'A')}
+                    </div>
+                    <div>
+                        <div style="font-weight:var(--weight-semibold); font-size:var(--text-sm); line-height:1.2;">
+                            ${UI.escapeHtml(e.users?.full_name || '—')}
+                        </div>
+                        <div style="font-size:var(--text-xs); color:var(--text-secondary);">
+                            ${UI.escapeHtml(e.users?.email || '—')}
+                        </div>
+                    </div>
+                </div>
+                <div style="padding: var(--space-5); flex:1;">
+                    <div style="font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 4px;">Curso Vinculado</div>
+                    <div style="font-family: var(--font-heading); font-size: var(--text-base); font-weight: var(--weight-medium); color: var(--text-primary);">
+                        📚 ${UI.escapeHtml(e.courses?.title || '—')}
+                    </div>
+                    <div style="margin-top: var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">
+                        Liberado em: ${UI.formatDate(e.granted_at)}
+                    </div>
+                </div>
+                <div style="padding: var(--space-3) var(--space-5); border-top: 1px solid var(--border-color); background: var(--bg-white);">
+                    <button class="btn btn-danger btn-block btn-sm"
+                        onclick="AdminCore.confirmUnenroll('${e.id}', '${UI.escapeHtml(e.users?.full_name || '')}', '${UI.escapeHtml(e.courses?.title || '')}')">
+                        🔒 Revogar Acesso
+                    </button>
+                </div>
+            </div>
+            `).join('');
 
         } catch (err) {
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--error); padding: var(--space-6);">Erro: ${UI.escapeHtml(err.message)}</td></tr>`;
+            grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; color: var(--error);">Erro: ${UI.escapeHtml(err.message)}</div>`;
         }
     }
 
@@ -568,6 +651,8 @@ const AdminCore = (() => {
         initEnrollments,
 
         // Expostos globalmente para handlers inline (onclick)
+        editUser,
+        editCourse,
         confirmDeleteUser,
         confirmDeleteCourse,
         toggleCourse,

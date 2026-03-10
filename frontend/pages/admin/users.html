@@ -55,46 +55,25 @@
             </header>
 
             <main class="main-content">
-                <div class="page-header">
-                    <h1>Gerenciar Alunos</h1>
-                    <p>Crie e gerencie as contas de acesso dos seus alunos.</p>
+                <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+                    <div>
+                        <h1>Gerenciar Alunos</h1>
+                        <p>Crie, edite e gerencie as contas de acesso dos seus alunos.</p>
+                    </div>
+                    <button id="btn-new-user-2" class="btn btn-primary" onclick="document.getElementById('btn-new-user').click()">
+                        + Novo Aluno
+                    </button>
                 </div>
 
-                <div class="card">
-                    <div class="card-header">
-                        <h2 class="card-title">👥 Lista de Alunos</h2>
-                        <button id="btn-new-user-2" class="btn btn-primary btn-sm"
-                            onclick="document.getElementById('btn-new-user').click()">
-                            + Novo Aluno
-                        </button>
-                    </div>
-                    <div class="card-body" style="padding: 0;">
-                        <div class="data-table-wrapper" style="border:none; box-shadow:none; border-radius:0;">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Nome</th>
-                                        <th>Email</th>
-                                        <th>Cadastrado em</th>
-                                        <th>Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="users-tbody">
-                                    <tr>
-                                        <td colspan="4"
-                                            style="text-align:center; padding: var(--space-8); color: var(--text-muted);">
-                                            Carregando...</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                <!-- Grid de Cards de Alunos -->
+                <div class="users-grid" id="users-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--space-6);">
+                    <div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--text-muted);">Carregando...</div>
                 </div>
             </main>
         </div>
     </div>
 
-    <!-- MODAL: Criar Aluno -->
+    <!-- MODAL: Criar/Editar Aluno -->
     <div class="modal-overlay" id="modal-create-user">
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-user-title">
             <div class="modal-header">
@@ -102,6 +81,7 @@
                 <button class="modal-close" id="modal-close-user" aria-label="Fechar">✕</button>
             </div>
             <form id="form-create-user">
+                <input type="hidden" id="edit-user-id" value="">
                 <div class="modal-body" style="display:flex; flex-direction:column; gap:var(--space-5);">
 
                     <!-- Aviso de segurança -->
@@ -134,12 +114,11 @@
                             required autocomplete="off" />
                     </div>
 
-                    <div class="form-group">
-                        <label class="form-label" for="new-user-password">Senha de Acesso <span
-                                class="required">*</span></label>
+                    <div class="form-group" id="pwd-group">
+                        <label class="form-label" for="new-user-password">Senha de Acesso <span id="pwd-req" class="required">*</span></label>
                         <input type="text" id="new-user-password" class="form-control" placeholder="Mínimo 6 caracteres"
-                            required autocomplete="new-password" />
-                        <span class="form-hint">⚠️ Anote ou informe a senha ao aluno após criar a conta.</span>
+                            autocomplete="new-password" />
+                        <span class="form-hint" id="pwd-hint">⚠️ Anote ou informe a senha ao aluno após criar a conta.</span>
                     </div>
 
                     <!-- Erro -->
@@ -157,7 +136,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary"
                         onclick="UI.closeModal('modal-create-user')">Cancelar</button>
-                    <button type="submit" id="btn-save-user" class="btn btn-primary">✅ Criar Aluno</button>
+                    <button type="submit" id="btn-save-user" class="btn btn-primary">✅ Salvar Aluno</button>
                 </div>
             </form>
         </div>

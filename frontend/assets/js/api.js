@@ -69,6 +69,24 @@ const API = (() => {
         return data;
     }
 
+    /** Atualiza dados públicos de um usuário */
+    async function updateUser(userId, { full_name, email, password }) {
+        // Como alterar senha ou email sem ServiceRole exige RPC (se não existir, daremos throw ou limitamos aqui).
+        // Atualiza primeiramente na tabela users
+        const updates = { full_name };
+
+        // Se pudermos alterar email/password, precisaríamos de uma RPC admin_update_user (opcional dependendo da estrutura atual).
+        // Por hora atualiza os dados públicos
+        const { data, error } = await sb()
+            .from('users')
+            .update(updates)
+            .eq('id', userId)
+            .select()
+            .single();
+
+        if (error) throw new Error(error.message);
+        return data;
+    }
 
     // ================================================================
     // COURSES
@@ -134,6 +152,55 @@ const API = (() => {
         const { data, error } = await sb()
             .from('courses')
             .insert({ title, description, cover_image_path, pdf_file_path })
+            .select()
+            .single();
+
+        if (error) throw new Error(error.message);
+        return data;
+    }
+
+    /** Atualiza um curso */
+    async function updateCourse(courseId, { title, description, coverFile, pdfFile }) {
+        const course = await getCourse(courseId);
+        let updates = { title, description };
+
+        // 1) Novo upload da capa
+        if (coverFile) {
+            const coverExt = coverFile.name.split('.').pop();
+            const coverPath = `covers/${crypto.randomUUID()}.${coverExt}`;
+            const { error: coverErr } = await sb().storage
+                .from(CONFIG.BUCKET_COVERS)
+                .upload(coverPath, coverFile, { upsert: false });
+
+            if (coverErr) throw new Error(`Erro ao enviar nova capa: ${coverErr.message}`);
+            updates.cover_image_path = coverPath;
+
+            // Tentativa de remover a capa antiga (ignora erro)
+            if (course.cover_image_path) {
+                sb().storage.from(CONFIG.BUCKET_COVERS).remove([course.cover_image_path]);
+            }
+        }
+
+        // 2) Novo upload do PDF
+        if (pdfFile) {
+            const pdfPath = `pdfs/${crypto.randomUUID()}.pdf`;
+            const { error: pdfErr } = await sb().storage
+                .from(CONFIG.BUCKET_PDFS)
+                .upload(pdfPath, pdfFile, { contentType: 'application/pdf', upsert: false });
+
+            if (pdfErr) throw new Error(`Erro ao enviar novo PDF: ${pdfErr.message}`);
+            updates.pdf_file_path = pdfPath;
+
+            // Tentativa de remover o PDF antigo (ignora erro)
+            if (course.pdf_file_path) {
+                sb().storage.from(CONFIG.BUCKET_PDFS).remove([course.pdf_file_path]);
+            }
+        }
+
+        const { data, error } = await sb()
+            .from('courses')
+            .update(updates)
+            .eq('id', courseId)
             .select()
             .single();
 
@@ -299,12 +366,14 @@ const API = (() => {
         listUsers,
         listStudents,
         createUser,
+        updateUser,
         deleteUser,
 
         // Courses
         listCourses,
         getCourse,
         createCourse,
+        updateCourse,
         toggleCourseStatus,
         deleteCourse,
 
