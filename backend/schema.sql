@@ -8,6 +8,7 @@
 -- 1. EXTENSÕES NECESSÁRIAS
 -- --------------------------------------------------------
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- --------------------------------------------------------
 -- 2. TABELA: users
