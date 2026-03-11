@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Meu Perfil — CursoPlataforma</title>
+    <meta name="description" content="Gerencie suas informações pessoais e segurança da conta." />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../../assets/css/variables.css" />
+    <link rel="stylesheet" href="../../assets/css/base.css" />
+    <link rel="stylesheet" href="../../assets/css/components.css" />
+    <link rel="stylesheet" href="../../assets/css/layouts.css" />
+</head>
+
+<body>
+
+    <div class="app-layout">
+
+        <!-- ── SIDEBAR ── -->
+        <aside class="sidebar" id="sidebar">
+            <a href="dashboard.html" class="sidebar-logo">
+                <div class="sidebar-logo-icon">📚</div>
+                <div class="sidebar-logo-text">
+                    CursoPlataforma
+                    <div class="sidebar-logo-tagline">Área do Aluno</div>
+                </div>
+            </a>
+
+            <nav class="sidebar-section">
+                <div class="sidebar-section-label">Minha Área</div>
+                <a href="dashboard.html" class="nav-link"><span class="nav-icon">🏠</span> Meus Cursos</a>
+                <a href="perfil.html" class="nav-link active"><span class="nav-icon">👤</span> Meu Perfil</a>
+            </nav>
+
+            <nav class="sidebar-section">
+                <div class="sidebar-section-label">Mais cursos</div>
+                <a href="../../../catalogo.html" class="nav-link" target="_blank"><span class="nav-icon">📚</span> Ver
+                    Catálogo</a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-user">
+                    <div class="avatar" id="sidebar-avatar">A</div>
+                    <div class="sidebar-user-info">
+                        <div class="sidebar-user-name" id="sidebar-user-name">Carregando...</div>
+                        <div class="sidebar-user-role" id="sidebar-user-role">Aluno</div>
+                    </div>
+                    <button id="logout-btn" title="Sair"
+                        style="background:none;border:none;cursor:pointer;font-size:1rem;padding:4px;color:var(--text-muted);">↩</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ── ÁREA PRINCIPAL ── -->
+        <div class="main-wrapper">
+
+            <!-- Topbar -->
+            <header class="topbar">
+                <button id="menu-toggle" class="btn btn-ghost btn-sm" style="display:none;" aria-label="Menu">☰</button>
+                <div class="topbar-greeting">
+                    <div class="topbar-greeting-text">Gerenciar conta</div>
+                </div>
+                <div class="topbar-actions">
+                    <button id="btn-dark-student" title="Alternar modo escuro" onclick="UI.toggleDark()"
+                        style="background:none;border:1.5px solid var(--border-color);border-radius:var(--radius-md);padding:6px 12px;cursor:pointer;font-size:1rem;color:var(--text-secondary);margin-right:8px;transition:all .2s;">
+                        🌙
+                    </button>
+                </div>
+            </header>
+
+            <main class="main-content">
+                <div class="page-header">
+                    <h1>Meu Perfil</h1>
+                    <p>Mantenha seus dados sempre protegidos e atualizados.</p>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 340px; gap: var(--space-8); align-items: start;">
+
+                    <!-- Formulário de Dados -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Informações Pessoais</h2>
+                        </div>
+                        <div class="card-body">
+                            <form id="form-profile" style="display: flex; flex-direction: column; gap: var(--space-5);">
+                                <div class="form-group">
+                                    <label class="form-label" for="profile-name">Nome Completo</label>
+                                    <input type="text" id="profile-name" class="form-control" placeholder="Seu nome"
+                                        required />
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">E-mail (Login)</label>
+                                    <input type="email" id="profile-email" class="form-control" disabled
+                                        style="background:var(--bg-secondary); cursor:not-allowed;" />
+                                    <span class="form-hint">O e-mail não pode ser alterado por motivos de
+                                        segurança.</span>
+                                </div>
+
+                                <div style="border-top: 1px dashed var(--border-color); margin: var(--space-2) 0;">
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label" for="profile-password">Nova Senha</label>
+                                    <input type="password" id="profile-password" class="form-control"
+                                        placeholder="Preencha apenas se quiser mudar" autocomplete="new-password" />
+                                    <span class="form-hint">Mínimo 6 caracteres.</span>
+                                </div>
+
+                                <div id="profile-error" class="form-error hidden" style="margin-top: var(--space-2);">
+                                </div>
+
+                                <div style="display: flex; justify-content: flex-end; margin-top: var(--space-2);">
+                                    <button type="submit" class="btn btn-primary" id="btn-save-profile">
+                                        ✅ Salvar Alterações
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Sidebar de Stats -->
+                    <div style="display: flex; flex-direction: column; gap: var(--space-6);">
+
+                        <div class="card" style="text-align: center; padding: var(--space-8);">
+                            <div class="avatar" id="profile-avatar"
+                                style="width: 80px; height: 80px; font-size: 2rem; margin: 0 auto var(--space-4); background: linear-gradient(135deg, var(--primary), var(--primary-hover)); display: flex; align-items: center; justify-content: center; color: white; border-radius: 50%;">
+                                A</div>
+                            <h3 id="profile-display-name" style="margin-bottom: var(--space-1);">Aluno</h3>
+                            <p id="profile-display-email"
+                                style="font-size: var(--text-sm); color: var(--text-secondary);">aluno@exemplo.com</p>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">📊 Suas Estatísticas</h2>
+                            </div>
+                            <div class="card-body" style="display: flex; flex-direction: column; gap: var(--space-4);">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: var(--text-secondary);">Cursos Ativos</span>
+                                    <strong id="stat-courses"
+                                        style="font-size: var(--text-lg); color: var(--primary);">0</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: var(--text-secondary);">Downloads Realizados</span>
+                                    <strong id="stat-downloads"
+                                        style="font-size: var(--text-lg); color: var(--success);">0</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script src="../../assets/js/config.js"></script>
+    <script src="../../assets/js/ui.js"></script>
+    <script src="../../assets/js/auth.js"></script>
+    <script src="../../assets/js/api.js"></script>
+    <script src="../../assets/js/student-core.js"></script>
+    <script>
+        UI.restoreDark();
+        StudentCore.initProfile();
+    </script>
+</body>
+
+</html>

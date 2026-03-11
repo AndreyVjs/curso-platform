@@ -66,6 +66,17 @@
                     </button>
                 </div>
 
+                <!-- Busca de Alunos -->
+                <div style="margin-bottom:var(--space-5);">
+                    <div style="position:relative;max-width:380px;">
+                        <span
+                            style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:1rem;">🔍</span>
+                        <input type="text" id="search-users" placeholder="Buscar por nome ou email..."
+                            autocomplete="off" class="form-control" style="padding-left:2.5rem;"
+                            oninput="AdminCore.filterUsers(this.value)" />
+                    </div>
+                </div>
+
                 <!-- Grid de Cards de Alunos -->
                 <div class="users-grid" id="users-grid"
                     style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--space-6);">
@@ -111,8 +122,15 @@
                     <div class="form-group" id="pwd-group">
                         <label class="form-label" for="new-user-password">Senha <span id="pwd-req"
                                 class="required">*</span></label>
-                        <input type="text" id="new-user-password" class="form-control" placeholder="Mínimo 6 caracteres"
-                            autocomplete="new-password" />
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <input type="text" id="new-user-password" class="form-control"
+                                placeholder="Mínimo 6 caracteres" autocomplete="new-password" style="flex:1;" />
+                            <button type="button" id="btn-copy-pwd" title="Copiar senha"
+                                onclick="AdminCore.copyPassword()"
+                                style="padding:8px 12px;background:var(--bg-secondary);border:1.5px solid var(--border-color);border-radius:var(--radius-md);cursor:pointer;font-size:.9rem;white-space:nowrap;color:var(--text-secondary);transition:all .2s;">
+                                📋 Copiar
+                            </button>
+                        </div>
                         <span class="form-hint" id="pwd-hint">⚠️ Anote ou informe a senha ao aluno.</span>
                     </div>
 

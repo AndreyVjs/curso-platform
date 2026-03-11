@@ -63,9 +63,42 @@ const AdminCore = (() => {
     async function initDashboard() {
         const result = await initLayout('dashboard');
         if (!result) return;
+        UI.restoreDark();
 
         await loadStats();
         await loadRecentEnrollments();
+        loadEnrollmentsChart(); // async sem await — não bloqueia
+    }
+
+    async function loadEnrollmentsChart() {
+        const canvas = document.getElementById('enrollments-chart');
+        if (!canvas || typeof Chart === 'undefined') return;
+        try {
+            const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+            const today = new Date();
+            const days = [], labels = [];
+            for (let i = 29; i >= 0; i--) {
+                const d = new Date(today);
+                d.setDate(d.getDate() - i);
+                days.push(d.toISOString().slice(0, 10));
+                labels.push(d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }));
+            }
+            const { data } = await sb.from('enrollments').select('granted_at').gte('granted_at', days[0] + 'T00:00:00Z');
+            const counts = {};
+            days.forEach(d => counts[d] = 0);
+            (data || []).forEach(e => { const day = (e.granted_at || '').slice(0, 10); if (counts[day] !== undefined) counts[day]++; });
+            const isDark = document.documentElement.classList.contains('dark');
+            const gridColor = isDark ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.06)';
+            const textColor = isDark ? '#9DA3B4' : '#6C757D';
+            new Chart(canvas, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{ label: 'Matrículas', data: days.map(d => counts[d]), borderColor: '#134E2A', backgroundColor: 'rgba(19,78,42,.1)', borderWidth: 2.5, fill: true, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#134E2A' }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { grid: { color: gridColor }, ticks: { color: textColor, maxTicksLimit: 10 } }, y: { grid: { color: gridColor }, ticks: { color: textColor, precision: 0 }, beginAtZero: true } } }
+            });
+        } catch (_) { /* silencioso */ }
     }
 
     async function loadStats() {
@@ -119,6 +152,7 @@ const AdminCore = (() => {
     async function initUsers() {
         const result = await initLayout('users');
         if (!result) return;
+        UI.restoreDark();
 
         await loadUsers();
 
@@ -150,6 +184,9 @@ const AdminCore = (() => {
         });
     }
 
+    // Cache para filtro client-side
+    let _allUsers = [];
+
     async function loadUsers() {
         const grid = document.getElementById('users-grid');
         if (!grid) return;
@@ -157,19 +194,28 @@ const AdminCore = (() => {
         grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--text-muted);">Carregando alunos...</div>';
 
         try {
-            const users = await API.listStudents();
+            _allUsers = await API.listStudents();
+            _renderUsersGrid(_allUsers);
+        } catch (err) {
+            grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; color: var(--error); padding: var(--space-6);">Erro: ${UI.escapeHtml(err.message)}</div>`;
+        }
+    }
 
-            if (!users.length) {
-                grid.innerHTML = `
+    function _renderUsersGrid(users) {
+        const grid = document.getElementById('users-grid');
+        if (!grid) return;
+
+        if (!users.length) {
+            grid.innerHTML = `
                 <div style="grid-column: 1 / -1; text-align: center; padding: var(--space-12) var(--space-6); background: var(--bg-white); border: 1px dashed var(--border-color); border-radius: var(--radius-lg);">
                     <div style="font-size: 3rem; margin-bottom: var(--space-3); opacity: 0.5;">👥</div>
                     <div style="font-family: var(--font-heading); font-weight: var(--weight-semibold); color: var(--text-primary); margin-bottom: var(--space-2);">Nenhum aluno cadastrado</div>
                     <p style="color: var(--text-secondary);">Clique em "Novo Aluno" para adicionar.</p>
                 </div>`;
-                return;
-            }
+            return;
+        }
 
-            grid.innerHTML = users.map(u => `
+        grid.innerHTML = users.map(u => `
             <div class="card" style="display: flex; flex-direction: column; height: 100%;">
                 <div class="card-body" style="flex: 1; display:flex; flex-direction:column; align-items:center; text-align:center; gap:var(--space-4);">
                     <div class="avatar" style="width: 64px; height: 64px; font-size: 1.5rem; background: linear-gradient(135deg, var(--primary), var(--primary-hover)); display: flex; align-items: center; justify-content: center; color: white; border-radius: 50%;">${UI.initials(u.full_name)}</div>
@@ -191,10 +237,25 @@ const AdminCore = (() => {
                 </div>
             </div>
             `).join('');
+    }
 
-        } catch (err) {
-            grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; color: var(--error); padding: var(--space-6);">Erro: ${UI.escapeHtml(err.message)}</div>`;
-        }
+    function filterUsers(query) {
+        const q = (query || '').toLowerCase().trim();
+        if (!q) { _renderUsersGrid(_allUsers); return; }
+        const filtered = _allUsers.filter(u =>
+            u.full_name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
+        );
+        _renderUsersGrid(filtered);
+    }
+
+    function copyPassword() {
+        const val = document.getElementById('new-user-password')?.value;
+        if (!val) { UI.toast('Nenhuma senha para copiar.', 'warning'); return; }
+        navigator.clipboard.writeText(val).then(() => {
+            const btn = document.getElementById('btn-copy-pwd');
+            if (btn) { const orig = btn.innerHTML; btn.innerHTML = '✅ Copiado!'; setTimeout(() => btn.innerHTML = orig, 2000); }
+            UI.toastSuccess('Senha copiada para a área de transferência!');
+        }).catch(() => UI.toastError('Não foi possível copiar. Copie manualmente.'));
     }
 
     async function handleCreateUser() {
@@ -406,6 +467,7 @@ const AdminCore = (() => {
     async function initCourses() {
         const result = await initLayout('courses');
         if (!result) return;
+        UI.restoreDark();
 
         await loadCourses();
 
@@ -457,6 +519,17 @@ const AdminCore = (() => {
 
             const size = (file.size / 1024 / 1024).toFixed(2);
             nameEl.textContent = `✅ ${file.name} (${size} MB)`;
+
+            // Preview da imagem (apenas para uploads de capa)
+            if (inputId === 'cover-file') {
+                const wrap = document.getElementById('cover-preview-wrap');
+                const img = document.getElementById('cover-preview-img');
+                if (wrap && img) {
+                    const reader = new FileReader();
+                    reader.onload = e => { img.src = e.target.result; wrap.style.display = 'block'; };
+                    reader.readAsDataURL(file);
+                }
+            }
         });
     }
 
@@ -473,6 +546,9 @@ const AdminCore = (() => {
             const el = document.getElementById(id);
             if (el) el.textContent = text;
         });
+        // Esconde preview da capa
+        const wrap = document.getElementById('cover-preview-wrap');
+        if (wrap) wrap.style.display = 'none';
     }
 
     async function handleCreateCourse() {
@@ -627,6 +703,7 @@ const AdminCore = (() => {
     async function initEnrollments() {
         const result = await initLayout('enrollments');
         if (!result) return;
+        UI.restoreDark();
 
         await Promise.all([
             loadEnrollments(),
@@ -794,6 +871,8 @@ const AdminCore = (() => {
         toggleCourse,
         confirmUnenroll,
         updateCheckboxStyle,
+        filterUsers,
+        copyPassword,
     };
 
 })();

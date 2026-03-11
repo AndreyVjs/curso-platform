@@ -213,6 +213,26 @@ const UI = (() => {
     }
 
 
+    /** Alterna modo escuro e persiste preferência */
+    function toggleDark() {
+        const isDark = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('cp-dark', isDark ? '1' : '0');
+        // Atualiza o ícone do botão de dark mode onde existir
+        document.querySelectorAll('#btn-dark-mode, #btn-dark-student').forEach(btn => {
+            if (btn) btn.textContent = isDark ? '☀️' : '🌙';
+        });
+    }
+
+    /** Restaura o dark mode salvo (chame no início de cada página) */
+    function restoreDark() {
+        if (localStorage.getItem('cp-dark') === '1') {
+            document.documentElement.classList.add('dark');
+            document.querySelectorAll('#btn-dark-mode, #btn-dark-student').forEach(btn => {
+                if (btn) btn.textContent = '☀️';
+            });
+        }
+    }
+
     // API pública
     return {
         toast, toastSuccess, toastError, toastInfo, toastWarning,
@@ -221,6 +241,7 @@ const UI = (() => {
         renderEmpty, renderSkeletonGrid, renderSkeletonRows,
         formatDate, el, qs, qsa, show, hide, toggle,
         truncate, initials, escapeHtml: _escapeHtml,
+        toggleDark, restoreDark,
     };
 
 })();
