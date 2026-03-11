@@ -94,8 +94,6 @@ CREATE POLICY "courses: admin_all"
     WITH CHECK (public.get_user_role() = 'admin');
 
 -- Alunos: podem ler APENAS cursos com active = TRUE
--- (Sem filtro de matrícula aqui — o JS + RPC fazem isso.
---  RLS aqui garante que cursos inativos nunca vazem.)
 CREATE POLICY "courses: student_select_active"
     ON public.courses
     FOR SELECT
@@ -104,6 +102,14 @@ CREATE POLICY "courses: student_select_active"
         active = TRUE
         AND public.get_user_role() = 'student'
     );
+
+-- Visitantes (anon): podem ler cursos ativos para o catálogo público
+DROP POLICY IF EXISTS "courses: anon_select_active" ON public.courses;
+CREATE POLICY "courses: anon_select_active"
+    ON public.courses
+    FOR SELECT
+    TO anon
+    USING (active = TRUE);
 
 
 -- ============================================================

@@ -70,12 +70,11 @@
 
     /* ── NAV ── */
     .nav {
-      background: var(--white);
-      border-bottom: 1px solid var(--border);
+      background: var(--primary);
+      border-bottom: 1px solid rgba(255, 255, 255, .1);
       position: sticky;
       top: 0;
       z-index: 200;
-      backdrop-filter: blur(10px)
     }
 
     .nav-inner {
@@ -98,13 +97,12 @@
     .logo-icon {
       width: 40px;
       height: 40px;
-      background: var(--primary);
+      background: rgba(255, 255, 255, .15);
       border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 1.2rem;
-      color: #fff;
       flex-shrink: 0
     }
 
@@ -113,12 +111,12 @@
       font-size: .95rem;
       font-weight: 800;
       line-height: 1.1;
-      color: var(--txt)
+      color: #fff
     }
 
     .logo-tag {
       font-size: .68rem;
-      color: var(--muted);
+      color: rgba(255, 255, 255, .6);
       font-weight: 400;
       font-family: var(--bd)
     }
@@ -147,14 +145,14 @@
     }
 
     .btn-ghost {
-      background: transparent;
-      color: var(--txt2);
-      border-color: var(--border)
+      background: rgba(255, 255, 255, .12);
+      color: #fff;
+      border-color: rgba(255, 255, 255, .25)
     }
 
     .btn-ghost:hover {
-      background: var(--bg2);
-      color: var(--txt)
+      background: rgba(255, 255, 255, .22);
+      color: #fff
     }
 
     .btn-primary {

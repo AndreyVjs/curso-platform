@@ -60,14 +60,18 @@
                         <h1>Gerenciar Alunos</h1>
                         <p>Crie, edite e gerencie as contas de acesso dos seus alunos.</p>
                     </div>
-                    <button id="btn-new-user-2" class="btn btn-primary" onclick="document.getElementById('btn-new-user').click()">
+                    <button id="btn-new-user-2" class="btn btn-primary"
+                        onclick="document.getElementById('btn-new-user').click()">
                         + Novo Aluno
                     </button>
                 </div>
 
                 <!-- Grid de Cards de Alunos -->
-                <div class="users-grid" id="users-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--space-6);">
-                    <div style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--text-muted);">Carregando...</div>
+                <div class="users-grid" id="users-grid"
+                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--space-6);">
+                    <div
+                        style="grid-column: 1 / -1; text-align: center; padding: var(--space-8); color: var(--text-muted);">
+                        Carregando...</div>
                 </div>
             </main>
         </div>
@@ -75,30 +79,20 @@
 
     <!-- MODAL: Criar/Editar Aluno -->
     <div class="modal-overlay" id="modal-create-user">
-        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-user-title">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-user-title" style="max-width:560px">
             <div class="modal-header">
                 <h3 class="modal-title" id="modal-user-title">Criar Novo Aluno</h3>
                 <button class="modal-close" id="modal-close-user" aria-label="Fechar">✕</button>
             </div>
             <form id="form-create-user">
                 <input type="hidden" id="edit-user-id" value="">
-                <div class="modal-body" style="display:flex; flex-direction:column; gap:var(--space-5);">
+                <div class="modal-body" style="display:flex; flex-direction:column; gap:var(--space-4);">
 
-                    <!-- Aviso de segurança -->
-                    <div style="
-          background: var(--info-light);
-          border: 1px solid #bfdbfe;
-          border-radius: var(--radius-md);
-          padding: var(--space-3) var(--space-4);
-          font-size: var(--text-sm);
-          color: #1e40af;
-          display: flex;
-          align-items: flex-start;
-          gap: var(--space-2);
-        ">
+                    <!-- Info -->
+                    <div
+                        style="background:var(--info-light);border:1px solid #bfdbfe;border-radius:var(--radius-md);padding:var(--space-3) var(--space-4);font-size:var(--text-sm);color:#1e40af;display:flex;align-items:flex-start;gap:var(--space-2);">
                         <span>ℹ️</span>
-                        <span>A conta é criada com segurança. Sua sessão de admin <strong>não será
-                                afetada</strong>.</span>
+                        <span>Sua sessão de admin <strong>não será afetada</strong>.</span>
                     </div>
 
                     <div class="form-group">
@@ -115,27 +109,47 @@
                     </div>
 
                     <div class="form-group" id="pwd-group">
-                        <label class="form-label" for="new-user-password">Senha de Acesso <span id="pwd-req" class="required">*</span></label>
+                        <label class="form-label" for="new-user-password">Senha <span id="pwd-req"
+                                class="required">*</span></label>
                         <input type="text" id="new-user-password" class="form-control" placeholder="Mínimo 6 caracteres"
                             autocomplete="new-password" />
-                        <span class="form-hint" id="pwd-hint">⚠️ Anote ou informe a senha ao aluno após criar a conta.</span>
+                        <span class="form-hint" id="pwd-hint">⚠️ Anote ou informe a senha ao aluno.</span>
                     </div>
 
-                    <!-- Erro -->
-                    <div id="create-user-error" class="hidden" style="
-          background: var(--error-light);
-          border: 1px solid var(--error-border);
-          border-radius: var(--radius-md);
-          padding: var(--space-3) var(--space-4);
-          font-size: var(--text-sm);
-          color: #991b1b;
-          display: none;
-        "></div>
+                    <!-- ── SEÇÃO DE CURSOS (visível apenas no modo edição) ── -->
+                    <div id="courses-enrollment-section" style="display:none;">
+                        <div style="border-top:1px solid var(--border-color);padding-top:var(--space-4);">
+                            <div
+                                style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-3);">
+                                <label
+                                    style="font-size:var(--text-sm);font-weight:var(--weight-semibold);color:var(--text-primary);">
+                                    📚 Cursos Liberados
+                                </label>
+                                <span style="font-size:var(--text-xs);color:var(--text-muted);"
+                                    id="enrolled-count">carregando...</span>
+                            </div>
+                            <div id="courses-checklist"
+                                style="display:flex;flex-direction:column;gap:var(--space-2);max-height:200px;overflow-y:auto;padding-right:4px;">
+                                <div
+                                    style="text-align:center;color:var(--text-muted);font-size:var(--text-sm);padding:var(--space-4);">
+                                    Carregando cursos...</div>
+                            </div>
+                            <div id="enrollment-error" class="hidden"
+                                style="margin-top:var(--space-2);font-size:var(--text-xs);color:var(--error)"></div>
+                        </div>
+                    </div>
+
+                    <!-- Erro geral -->
+                    <div id="create-user-error" class="hidden"
+                        style="background:var(--error-light);border:1px solid var(--error-border);border-radius:var(--radius-md);padding:var(--space-3) var(--space-4);font-size:var(--text-sm);color:#991b1b;display:none;">
+                    </div>
 
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer" style="flex-wrap:wrap;gap:var(--space-2);">
                     <button type="button" class="btn btn-secondary"
                         onclick="UI.closeModal('modal-create-user')">Cancelar</button>
+                    <button type="button" id="btn-save-enrollments" class="btn btn-success" style="display:none;">🎓
+                        Salvar Cursos</button>
                     <button type="submit" id="btn-save-user" class="btn btn-primary">✅ Salvar Aluno</button>
                 </div>
             </form>

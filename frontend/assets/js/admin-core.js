@@ -129,6 +129,9 @@ const AdminCore = (() => {
             document.getElementById('btn-save-user').textContent = '✅ Criar Aluno';
             document.getElementById('pwd-req').style.display = 'inline';
             document.getElementById('pwd-hint').textContent = '⚠️ Anote ou informe a senha ao aluno após criar a conta.';
+            // Esconde seção de cursos no modo criação
+            document.getElementById('courses-enrollment-section').style.display = 'none';
+            document.getElementById('btn-save-enrollments').style.display = 'none';
 
             UI.openModal('modal-create-user');
             document.getElementById('form-create-user')?.reset();
@@ -242,12 +245,145 @@ const AdminCore = (() => {
         document.getElementById('new-user-password').value = '';
 
         document.getElementById('modal-user-title').textContent = 'Editar Aluno';
-        document.getElementById('btn-save-user').textContent = '✅ Salvar Alterações';
+        document.getElementById('btn-save-user').textContent = '✅ Salvar Dados';
         document.getElementById('pwd-req').style.display = 'none';
         document.getElementById('pwd-hint').textContent = 'ℹ️ Deixe em branco para manter a senha atual.';
 
+        // Mostra seção de cursos e botão de salvar matrículas
+        document.getElementById('courses-enrollment-section').style.display = 'block';
+        document.getElementById('btn-save-enrollments').style.display = 'inline-flex';
+
         clearFormError('create-user-error');
         UI.openModal('modal-create-user');
+
+        // Carrega os cursos e matrículas do aluno
+        loadUserEnrollments(id);
+
+        // Configura botão de salvar matrículas
+        const saveEnrollBtn = document.getElementById('btn-save-enrollments');
+        saveEnrollBtn.onclick = () => saveEnrollments(id, name);
+    }
+
+    async function loadUserEnrollments(userId) {
+        const checklist = document.getElementById('courses-checklist');
+        const countEl = document.getElementById('enrolled-count');
+        checklist.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:var(--text-sm);padding:var(--space-4);">Carregando...</div>';
+
+        try {
+            const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+
+            // Busca todos os cursos ativos
+            const { data: allCourses, error: errC } = await sb
+                .from('courses')
+                .select('id, title')
+                .eq('active', true)
+                .order('title');
+            if (errC) throw errC;
+
+            // Busca matrículas atuais do aluno
+            const { data: enrolled, error: errE } = await sb
+                .from('enrollments')
+                .select('course_id')
+                .eq('user_id', userId);
+            if (errE) throw errE;
+
+            const enrolledIds = new Set((enrolled || []).map(e => e.course_id));
+            const enrolledCount = enrolledIds.size;
+
+            if (countEl) countEl.textContent = `${enrolledCount} de ${allCourses.length} curso(s) liberado(s)`;
+
+            if (!allCourses.length) {
+                checklist.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:var(--text-sm);padding:var(--space-4);">Nenhum curso cadastrado ainda.</div>';
+                return;
+            }
+
+            checklist.innerHTML = allCourses.map(c => {
+                const isEnrolled = enrolledIds.has(c.id);
+                return `
+                <label style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-3);border-radius:var(--radius-md);border:1px solid ${isEnrolled ? 'var(--primary-light)' : 'var(--border-color)'};background:${isEnrolled ? 'var(--primary-light)' : 'var(--bg-secondary)'};cursor:pointer;transition:all .15s;" id="label-${c.id}">
+                    <input type="checkbox" data-course-id="${c.id}" ${isEnrolled ? 'checked' : ''}
+                        style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer;"
+                        onchange="AdminCore.updateCheckboxStyle(this)">
+                    <span style="font-size:var(--text-sm);font-weight:var(--weight-medium);flex:1;">${UI.escapeHtml(c.title)}</span>
+                    ${isEnrolled ? '<span style="font-size:.7rem;color:var(--primary);font-weight:600;">✅ Liberado</span>' : '<span style="font-size:.7rem;color:var(--text-muted);">Não liberado</span>'}
+                </label>`;
+            }).join('');
+
+        } catch (err) {
+            checklist.innerHTML = `<div style="text-align:center;color:var(--error);font-size:var(--text-sm);padding:var(--space-4);">Erro ao carregar: ${UI.escapeHtml(err.message)}</div>`;
+        }
+    }
+
+    function updateCheckboxStyle(checkbox) {
+        const courseId = checkbox.dataset.courseId;
+        const label = document.getElementById(`label-${courseId}`);
+        if (!label) return;
+        const badge = label.querySelector('span:last-child');
+        if (checkbox.checked) {
+            label.style.border = '1px solid var(--primary-light)';
+            label.style.background = 'var(--primary-light)';
+            if (badge) { badge.textContent = '✅ Liberado'; badge.style.color = 'var(--primary)'; }
+        } else {
+            label.style.border = '1px solid var(--border-color)';
+            label.style.background = 'var(--bg-secondary)';
+            if (badge) { badge.textContent = 'Não liberado'; badge.style.color = 'var(--text-muted)'; }
+        }
+    }
+
+    async function saveEnrollments(userId, userName) {
+        const btn = document.getElementById('btn-save-enrollments');
+        const errEl = document.getElementById('enrollment-error');
+        errEl.classList.add('hidden');
+        errEl.textContent = '';
+
+        const checkboxes = document.querySelectorAll('#courses-checklist input[type="checkbox"]');
+        const toEnroll = [];
+        const toRemove = [];
+
+        const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+
+        // Pega estado atual de matrículas
+        const { data: current } = await sb.from('enrollments').select('course_id').eq('user_id', userId);
+        const currentIds = new Set((current || []).map(e => e.course_id));
+
+        checkboxes.forEach(cb => {
+            const cid = cb.dataset.courseId;
+            if (cb.checked && !currentIds.has(cid)) toEnroll.push(cid);
+            if (!cb.checked && currentIds.has(cid)) toRemove.push(cid);
+        });
+
+        if (!toEnroll.length && !toRemove.length) {
+            UI.toast('Nenhuma mudança detectada nos cursos.', 'info');
+            return;
+        }
+
+        UI.setButtonLoading(btn, 'Salvando...');
+
+        try {
+            // Adicionar matrículas
+            if (toEnroll.length) {
+                const rows = toEnroll.map(cid => ({ user_id: userId, course_id: cid, granted_at: new Date().toISOString() }));
+                const { error } = await sb.from('enrollments').insert(rows);
+                if (error) throw error;
+            }
+
+            // Remover matrículas
+            if (toRemove.length) {
+                const { error } = await sb.from('enrollments').delete()
+                    .eq('user_id', userId).in('course_id', toRemove);
+                if (error) throw error;
+            }
+
+            UI.toastSuccess(`Cursos de "${userName}" atualizados! +${toEnroll.length} adicionado(s), -${toRemove.length} removido(s).`);
+            // Recarrega a lista atualizada
+            await loadUserEnrollments(userId);
+
+        } catch (err) {
+            errEl.textContent = '⚠️ Erro ao salvar: ' + err.message;
+            errEl.classList.remove('hidden');
+        }
+
+        UI.resetButton(btn);
     }
 
     async function confirmDeleteUser(userId, userName) {
@@ -657,6 +793,7 @@ const AdminCore = (() => {
         confirmDeleteCourse,
         toggleCourse,
         confirmUnenroll,
+        updateCheckboxStyle,
     };
 
 })();
