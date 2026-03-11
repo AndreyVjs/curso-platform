@@ -11,22 +11,28 @@ const CONFIG = Object.freeze({
 
   // ── Storage Buckets ───────────────────────────────────────
   BUCKET_COVERS: 'course_assets',
-  BUCKET_PDFS:   'course_files',
+  BUCKET_PDFS: 'course_files',
 
-  // ── Rotas por Role ────────────────────────────────────────
+  // ── Rotas ─────────────────────────────────────────────────
   ROUTES: {
-    LOGIN:             '/login.html',
-    ADMIN_DASHBOARD:   '/frontend/pages/admin/dashboard.html',
-    ADMIN_USERS:       '/frontend/pages/admin/users.html',
-    ADMIN_COURSES:     '/frontend/pages/admin/courses.html',
+    LOGIN: '/login.html',
+    CATALOG: '/catalogo.html',
+    ADMIN_DASHBOARD: '/frontend/pages/admin/dashboard.html',
+    ADMIN_USERS: '/frontend/pages/admin/users.html',
+    ADMIN_COURSES: '/frontend/pages/admin/courses.html',
     ADMIN_ENROLLMENTS: '/frontend/pages/admin/enrollments.html',
     STUDENT_DASHBOARD: '/frontend/pages/student/dashboard.html',
-    STUDENT_COURSE:    '/frontend/pages/student/course-view.html',
+    STUDENT_COURSE: '/frontend/pages/student/course-view.html',
   },
+
+  // ── WhatsApp ───────────────────────────────────────────────
+  // Troque pelo número real com DDI+DDD (sem espaços ou símbolos)
+  WHATSAPP_NUMBER: '5511999999999',
+  WHATSAPP_MESSAGE: 'Olá! Vi os cursos na plataforma e gostaria de saber mais.',
 
   // ── Roles ─────────────────────────────────────────────────
   ROLES: {
-    ADMIN:   'admin',
+    ADMIN: 'admin',
     STUDENT: 'student',
   },
 
