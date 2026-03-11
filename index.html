@@ -1,80 +1,1056 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CursoPlataforma — Área de Membros</title>
-  <meta name="description" content="Acesse sua plataforma de cursos e ebooks." />
-
-  <!-- Supabase CDN -->
+  <title>CursoPlataforma — Cursos e Ebooks Premium</title>
+  <meta name="description"
+    content="Explore nosso catálogo de cursos e ebooks. Adquira via WhatsApp e tenha acesso imediato." />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <!-- CSS -->
-  <link rel="stylesheet" href="frontend/assets/css/variables.css" />
-  <link rel="stylesheet" href="frontend/assets/css/base.css" />
-
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Montserrat:wght@700;800;900&display=swap"
+    rel="stylesheet" />
   <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    :root {
+      --primary: #134E2A;
+      --primary-h: #1a6b39;
+      --primary-light: #e8f5ee;
+      --primary-glow: rgba(19, 78, 42, .2);
+      --bg: #F8F9FA;
+      --white: #fff;
+      --bg2: #F1F3F5;
+      --txt: #121212;
+      --txt2: #6C757D;
+      --muted: #ADB5BD;
+      --border: #E5E7EB;
+      --sh-sm: 0 4px 6px -1px rgba(0, 0, 0, .06);
+      --sh-md: 0 10px 20px -5px rgba(0, 0, 0, .08);
+      --sh-lg: 0 24px 48px -8px rgba(0, 0, 0, .14);
+      --r-md: 10px;
+      --r-lg: 16px;
+      --r-xl: 22px;
+      --r-full: 9999px;
+      --hd: 'Montserrat', system-ui, sans-serif;
+      --bd: 'Inter', system-ui, sans-serif;
+      --wpp: #25D366;
+      --wpp-d: #128C7E;
+    }
+
+    html {
+      scroll-behavior: smooth
+    }
+
     body {
+      font-family: var(--bd);
+      background: var(--bg);
+      color: var(--txt);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit
+    }
+
+    img {
+      max-width: 100%;
+      display: block
+    }
+
+    /* ── NAV ── */
+    .nav {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      backdrop-filter: blur(10px)
+    }
+
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      height: 66px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: .6rem
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--primary);
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
-      background: var(--bg-main);
+      font-size: 1.2rem;
+      color: #fff;
+      flex-shrink: 0
     }
-    .redirect-container {
-      text-align: center;
-      color: var(--text-secondary);
+
+    .logo-name {
+      font-family: var(--hd);
+      font-size: .95rem;
+      font-weight: 800;
+      line-height: 1.1;
+      color: var(--txt)
     }
-    .redirect-spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid var(--border-color);
-      border-top-color: var(--primary);
+
+    .logo-tag {
+      font-size: .68rem;
+      color: var(--muted);
+      font-weight: 400;
+      font-family: var(--bd)
+    }
+
+    .nav-btns {
+      display: flex;
+      align-items: center;
+      gap: .75rem
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .4rem;
+      padding: .55rem 1.1rem;
+      font-family: var(--bd);
+      font-size: .875rem;
+      font-weight: 600;
+      border-radius: var(--r-md);
+      border: 1.5px solid transparent;
+      cursor: pointer;
+      transition: all .2s;
+      white-space: nowrap;
+      text-decoration: none
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--txt2);
+      border-color: var(--border)
+    }
+
+    .btn-ghost:hover {
+      background: var(--bg2);
+      color: var(--txt)
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary)
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-h);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px var(--primary-glow)
+    }
+
+    .btn-wpp {
+      background: var(--wpp);
+      color: #fff;
+      border-color: var(--wpp);
+      font-weight: 700
+    }
+
+    .btn-wpp:hover {
+      background: var(--wpp-d);
+      border-color: var(--wpp-d);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(37, 211, 102, .35)
+    }
+
+    /* ── HERO ── */
+    .hero {
+      background: linear-gradient(150deg, var(--primary) 0%, #0c3520 55%, #071910 100%);
+      padding: 6rem 1.5rem 0;
+      position: relative;
+      overflow: hidden
+    }
+
+    .hero-orb {
+      position: absolute;
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin: 0 auto var(--space-4);
+      opacity: .07
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .hero-orb-1 {
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, #7dda9e, transparent);
+      top: -150px;
+      right: -100px
+    }
+
+    .hero-orb-2 {
+      width: 350px;
+      height: 350px;
+      background: radial-gradient(circle, #4cd98a, transparent);
+      bottom: 80px;
+      left: -80px
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      max-width: 700px;
+      margin: 0 auto;
+      text-align: center
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      background: rgba(255, 255, 255, .1);
+      border: 1px solid rgba(255, 255, 255, .18);
+      color: rgba(255, 255, 255, .9);
+      font-size: .78rem;
+      font-weight: 700;
+      padding: .35rem 1rem;
+      border-radius: var(--r-full);
+      margin-bottom: 1.75rem;
+      letter-spacing: .05em;
+      text-transform: uppercase
+    }
+
+    .hero h1 {
+      font-family: var(--hd);
+      font-size: clamp(2.2rem, 5.5vw, 3.6rem);
+      font-weight: 900;
+      color: #fff;
+      line-height: 1.1;
+      margin-bottom: 1.1rem
+    }
+
+    .hero h1 em {
+      font-style: normal;
+      background: linear-gradient(90deg, #7dda9e, #4cd98a);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text
+    }
+
+    .hero p {
+      color: rgba(255, 255, 255, .72);
+      font-size: 1.1rem;
+      line-height: 1.7;
+      margin-bottom: 2.25rem
+    }
+
+    .hero-cta {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .85rem;
+      flex-wrap: wrap;
+      margin-bottom: 3.5rem
+    }
+
+    .hero-btn-wpp {
+      display: inline-flex;
+      align-items: center;
+      gap: .6rem;
+      padding: .9rem 2rem;
+      background: var(--wpp);
+      color: #fff;
+      font-family: var(--bd);
+      font-size: 1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: var(--r-lg);
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: 0 6px 24px rgba(37, 211, 102, .4);
+      transition: all .25s
+    }
+
+    .hero-btn-wpp:hover {
+      background: var(--wpp-d);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 32px rgba(37, 211, 102, .45)
+    }
+
+    .hero-btn-login {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .9rem 1.75rem;
+      background: rgba(255, 255, 255, .1);
+      color: #fff;
+      border: 1.5px solid rgba(255, 255, 255, .22);
+      font-family: var(--bd);
+      font-size: .95rem;
+      font-weight: 600;
+      border-radius: var(--r-lg);
+      text-decoration: none;
+      transition: all .25s
+    }
+
+    .hero-btn-login:hover {
+      background: rgba(255, 255, 255, .18);
+      border-color: rgba(255, 255, 255, .4)
+    }
+
+    /* Onda hero→white */
+    .wave-hero {
+      display: block;
+      width: 100%;
+      margin-bottom: -2px;
+      color: var(--bg)
+    }
+
+    /* ── STATS ── */
+    .stats {
+      background: var(--bg);
+      padding: 2.5rem 1.5rem
+    }
+
+    .stats-inner {
+      max-width: 900px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1.5rem
+    }
+
+    .stat-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 1.5rem 1.25rem;
+      text-align: center;
+      box-shadow: var(--sh-sm);
+      transition: all .25s
+    }
+
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--sh-md);
+      border-color: var(--primary-light)
+    }
+
+    .stat-icon {
+      font-size: 1.75rem;
+      margin-bottom: .5rem
+    }
+
+    .stat-value {
+      font-family: var(--hd);
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: .2rem
+    }
+
+    .stat-label {
+      font-size: .83rem;
+      color: var(--txt2)
+    }
+
+    /* Onda white→verde claro */
+    .wave-stats-top {
+      display: block;
+      width: 100%;
+      color: var(--primary-light);
+      margin-bottom: -2px
+    }
+
+    .wave-stats-bot {
+      display: block;
+      width: 100%;
+      color: var(--primary-light);
+      transform: rotate(180deg);
+      margin-top: -2px
+    }
+
+    /* ── CATÁLOGO ── */
+    .catalog {
+      background: var(--primary-light);
+      padding: 3rem 1.5rem
+    }
+
+    .section-label {
+      font-family: var(--hd);
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--primary);
+      margin-bottom: .4rem
+    }
+
+    .section-title {
+      font-family: var(--hd);
+      font-size: 1.85rem;
+      font-weight: 800;
+      color: var(--txt);
+      margin-bottom: .5rem
+    }
+
+    .section-sub {
+      color: var(--txt2);
+      font-size: .95rem;
+      margin-bottom: 2.5rem
+    }
+
+    .catalog-inner {
+      max-width: 1200px;
+      margin: 0 auto
+    }
+
+    .courses-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem
+    }
+
+    .course-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--r-xl);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--sh-sm);
+      transition: all .3s
+    }
+
+    .course-card:hover {
+      transform: translateY(-6px);
+      box-shadow: var(--sh-lg);
+      border-color: var(--primary)
+    }
+
+    .c-cover {
+      width: 100%;
+      aspect-ratio: 16/9;
+      object-fit: cover;
+      background: var(--bg2)
+    }
+
+    .c-cover-ph {
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: linear-gradient(135deg, var(--primary), #071910);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem
+    }
+
+    .c-body {
+      padding: 1.25rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: .65rem
+    }
+
+    .c-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .3rem;
+      background: var(--primary-light);
+      color: var(--primary);
+      font-size: .7rem;
+      font-weight: 700;
+      padding: .2rem .65rem;
+      border-radius: var(--r-full);
+      width: fit-content;
+      text-transform: uppercase;
+      letter-spacing: .04em
+    }
+
+    .c-title {
+      font-family: var(--hd);
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1.3
+    }
+
+    .c-desc {
+      font-size: .875rem;
+      color: var(--txt2);
+      line-height: 1.6;
+      flex: 1;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
+      -webkit-box-orient: vertical
+    }
+
+    .c-footer {
+      padding: .9rem 1.25rem;
+      border-top: 1px solid var(--border)
+    }
+
+    .c-cta {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      width: 100%;
+      padding: .7rem;
+      background: var(--wpp);
+      color: #fff;
+      font-family: var(--bd);
+      font-size: .875rem;
+      font-weight: 700;
+      border: none;
+      border-radius: var(--r-md);
+      cursor: pointer;
+      transition: all .2s;
+      text-decoration: none
+    }
+
+    .c-cta:hover {
+      background: var(--wpp-d);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(37, 211, 102, .35)
+    }
+
+    .skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: var(--r-xl);
+      height: 320px
+    }
+
+    @keyframes shimmer {
+      0% {
+        background-position: 200% 0
+      }
+
+      100% {
+        background-position: -200% 0
+      }
+    }
+
+    /* Onda verde claro→branco */
+    .wave-cat-bot {
+      display: block;
+      width: 100%;
+      color: var(--white);
+      margin-bottom: -2px
+    }
+
+    /* ── COMO FUNCIONA ── */
+    .how {
+      background: var(--white);
+      padding: 4rem 1.5rem
+    }
+
+    .how-inner {
+      max-width: 960px;
+      margin: 0 auto;
+      text-align: center
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin: 2.5rem 0
+    }
+
+    .step {
+      position: relative;
+      padding: 2rem 1.25rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--r-xl);
+      transition: all .25s
+    }
+
+    .step:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--sh-md);
+      border-color: var(--primary-light)
+    }
+
+    .step-num {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #fff;
+      font-family: var(--hd);
+      font-size: 1.3rem;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem
+    }
+
+    .step h3 {
+      font-family: var(--hd);
+      font-size: .95rem;
+      font-weight: 700;
+      margin-bottom: .5rem
+    }
+
+    .step p {
+      font-size: .83rem;
+      color: var(--txt2);
+      line-height: 1.6
+    }
+
+    .step-connector {
+      position: absolute;
+      top: 1.5rem;
+      right: -1rem;
+      width: 2rem;
+      font-size: 1.2rem;
+      color: var(--muted);
+      display: none
+    }
+
+    @media(min-width:600px) {
+      .step-connector {
+        display: block
+      }
+    }
+
+    /* Onda white→escuro */
+    .wave-how-bot {
+      display: block;
+      width: 100%;
+      color: #0d1f15;
+      margin-bottom: -2px
+    }
+
+    /* ── FOOTER CTA ── */
+    .footer-cta {
+      background: #0d1f15;
+      padding: 5rem 1.5rem
+    }
+
+    .footer-cta-inner {
+      max-width: 700px;
+      margin: 0 auto;
+      text-align: center
+    }
+
+    .footer-cta h2 {
+      font-family: var(--hd);
+      font-size: clamp(1.6rem, 4vw, 2.5rem);
+      font-weight: 900;
+      color: #fff;
+      margin-bottom: .75rem;
+      line-height: 1.15
+    }
+
+    .footer-cta p {
+      color: rgba(255, 255, 255, .65);
+      font-size: 1rem;
+      margin-bottom: 2.5rem;
+      line-height: 1.7
+    }
+
+    /* ── FOOTER ── */
+    .footer {
+      background: #071910;
+      border-top: 1px solid rgba(255, 255, 255, .07);
+      padding: 1.75rem 1.5rem;
+      text-align: center;
+      color: rgba(255, 255, 255, .45);
+      font-size: .82rem
+    }
+
+    .footer a {
+      color: rgba(255, 255, 255, .4);
+      text-decoration: underline
+    }
+
+    .footer a:hover {
+      color: rgba(255, 255, 255, .7)
+    }
+
+    /* ── FAB WHATSAPP ── */
+    .fab {
+      position: fixed;
+      bottom: 1.75rem;
+      right: 1.75rem;
+      z-index: 9999
+    }
+
+    .fab a {
+      width: 58px;
+      height: 58px;
+      background: var(--wpp);
+      border-radius: 50%;
+      box-shadow: 0 6px 24px rgba(37, 211, 102, .5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      transition: all .3s cubic-bezier(.175, .885, .32, 1.275);
+      animation: wpp-pulse 2.5s ease-in-out infinite
+    }
+
+    .fab a:hover {
+      transform: scale(1.12);
+      box-shadow: 0 10px 32px rgba(37, 211, 102, .65);
+      animation: none
+    }
+
+    .fab-tip {
+      position: absolute;
+      right: 68px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #1a1a1a;
+      color: #fff;
+      font-size: .78rem;
+      font-weight: 500;
+      padding: .4rem .85rem;
+      border-radius: var(--r-full);
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s
+    }
+
+    .fab:hover .fab-tip {
+      opacity: 1
+    }
+
+    .fab-tip::after {
+      content: '';
+      position: absolute;
+      right: -5px;
+      top: 50%;
+      transform: translateY(-50%);
+      border: 5px solid transparent;
+      border-right: none;
+      border-left-color: #1a1a1a
+    }
+
+    @keyframes wpp-pulse {
+
+      0%,
+      100% {
+        box-shadow: 0 6px 24px rgba(37, 211, 102, .5)
+      }
+
+      50% {
+        box-shadow: 0 6px 30px rgba(37, 211, 102, .8), 0 0 0 10px rgba(37, 211, 102, .12)
+      }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media(max-width:640px) {
+      .nav-btns .btn-ghost {
+        display: none
+      }
+
+      .hero {
+        padding: 4rem 1rem 0
+      }
+    }
   </style>
 </head>
+
 <body>
-  <div class="redirect-container">
-    <div class="redirect-spinner"></div>
-    <p>Verificando sessão...</p>
+
+  <!-- ══ NAV ══ -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="logo">
+        <div class="logo-icon">📚</div>
+        <div>
+          <div class="logo-name">CursoPlataforma</div>
+          <div class="logo-tag">Catálogo de cursos</div>
+        </div>
+      </a>
+      <div class="nav-btns">
+        <a id="btn-nav-wpp" href="#" target="_blank" rel="noopener" class="btn btn-wpp">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15">
+            <path
+              d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+            <path
+              d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.659 1.438 5.168L2 22l4.956-1.418A9.96 9.96 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.96 7.96 0 01-4.037-1.1l-.29-.173-2.94.841.854-2.868-.19-.295A7.96 7.96 0 014 12c0-4.411 3.589-8 8-8s8 3.589 8 8-3.589 8-8 8z" />
+          </svg>
+          WhatsApp
+        </a>
+        <a href="login.html" class="btn btn-ghost">🔐 Entrar</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ══ HERO ══ -->
+  <section class="hero">
+    <div class="hero-orb hero-orb-1"></div>
+    <div class="hero-orb hero-orb-2"></div>
+    <div class="hero-inner">
+      <div class="hero-badge">✨ Biblioteca digital de conhecimento</div>
+      <h1>Cursos e ebooks para <em>transformar</em> a sua carreira</h1>
+      <p>Conteúdo premium de forma simples. Escolha um curso, entre em contato pelo WhatsApp e receba seu acesso em
+        minutos.</p>
+      <div class="hero-cta">
+        <a id="btn-hero-wpp" href="#" target="_blank" rel="noopener" class="hero-btn-wpp">
+          <svg viewBox="0 0 24 24" fill="white" width="20" height="20">
+            <path
+              d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+            <path
+              d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.659 1.438 5.168L2 22l4.956-1.418A9.96 9.96 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.96 7.96 0 01-4.037-1.1l-.29-.173-2.94.841.854-2.868-.19-.295A7.96 7.96 0 014 12c0-4.411 3.589-8 8-8s8 3.589 8 8-3.589 8-8 8z" />
+          </svg>
+          Quero comprar via WhatsApp
+        </a>
+        <a href="login.html" class="hero-btn-login">🔐 Já sou aluno</a>
+      </div>
+    </div>
+    <!-- Onda suave hero → stats -->
+    <svg class="wave-hero" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 90" preserveAspectRatio="none"
+      fill="currentColor" aria-hidden="true">
+      <path d="M0,60 C240,90 480,30 720,55 C960,80 1200,40 1440,60 L1440,90 L0,90 Z" />
+    </svg>
+  </section>
+
+  <!-- ══ STATS ══ -->
+  <section class="stats">
+    <div class="stats-inner">
+      <div class="stat-card">
+        <div class="stat-icon">📚</div>
+        <div class="stat-value" id="stat-cursos">...</div>
+        <div class="stat-label">Cursos disponíveis</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">⚡</div>
+        <div class="stat-value">Imediato</div>
+        <div class="stat-label">Acesso após confirmação</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📱</div>
+        <div class="stat-value">WhatsApp</div>
+        <div class="stat-label">Suporte direto</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🔒</div>
+        <div class="stat-value">100%</div>
+        <div class="stat-label">Seguro e confiável</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Onda suave stats → catálogo (verde claro) -->
+  <svg class="wave-stats-top" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 70" preserveAspectRatio="none"
+    fill="currentColor" aria-hidden="true">
+    <path d="M0,35 C360,70 1080,0 1440,35 L1440,70 L0,70 Z" />
+  </svg>
+
+  <!-- ══ CATÁLOGO ══ -->
+  <section class="catalog">
+    <div class="catalog-inner">
+      <div class="section-label">📋 Disponíveis agora</div>
+      <div class="section-title">Todos os cursos</div>
+      <div class="section-sub">Clique em um curso para adquirir via WhatsApp. Processo simples e rápido.</div>
+      <div class="courses-grid" id="courses-grid">
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Onda suave catálogo → como funciona -->
+  <svg class="wave-cat-bot" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 80" preserveAspectRatio="none"
+    fill="currentColor" aria-hidden="true">
+    <path d="M0,40 C480,80 960,0 1440,40 L1440,80 L0,80 Z" />
+  </svg>
+
+  <!-- ══ COMO FUNCIONA ══ -->
+  <section class="how">
+    <div class="how-inner">
+      <div class="section-label">🗺 Processo</div>
+      <div class="section-title">Como funciona?</div>
+      <div class="section-sub">Do interesse ao acesso completo em minutos.</div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <h3>Escolha o curso</h3>
+          <p>Explore o catálogo e encontre o conteúdo ideal para você.</p>
+          <span class="step-connector">→</span>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <h3>Fale no WhatsApp</h3>
+          <p>Clique no botão do curso e envie mensagem direto para o admin.</p>
+          <span class="step-connector">→</span>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <h3>Receba seu acesso</h3>
+          <p>Após a confirmação você recebe login e senha para entrar.</p>
+          <span class="step-connector">→</span>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <h3>Aprenda à vontade</h3>
+          <p>Acesse de qualquer dispositivo, quando e onde quiser.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Onda suave como funciona → footer CTA -->
+  <svg class="wave-how-bot" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 80" preserveAspectRatio="none"
+    fill="currentColor" aria-hidden="true">
+    <path d="M0,0 C480,80 960,0 1440,0 L1440,80 L0,80 Z" />
+  </svg>
+
+  <!-- ══ FOOTER CTA ══ -->
+  <section class="footer-cta">
+    <div class="footer-cta-inner">
+      <h2>Pronto para começar<br />a aprender?</h2>
+      <p>Escolha um curso acima ou entre em contato agora mesmo. Nossa equipe responde rapidamente.</p>
+      <a id="btn-footer-wpp" href="#" target="_blank" rel="noopener" class="hero-btn-wpp"
+        style="margin:0 auto;display:inline-flex;">
+        <svg viewBox="0 0 24 24" fill="white" width="20" height="20">
+          <path
+            d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+          <path
+            d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.659 1.438 5.168L2 22l4.956-1.418A9.96 9.96 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.96 7.96 0 01-4.037-1.1l-.29-.173-2.94.841.854-2.868-.19-.295A7.96 7.96 0 014 12c0-4.411 3.589-8 8-8s8 3.589 8 8-3.589 8-8 8z" />
+        </svg>
+        Falar com o suporte agora
+      </a>
+    </div>
+  </section>
+
+  <!-- ══ FOOTER ══ -->
+  <footer class="footer">
+    <p>© 2025 <strong style="color:rgba(255,255,255,.7)">CursoPlataforma</strong> · Todos os direitos reservados
+      &nbsp;·&nbsp; <a href="login.html">Login de alunos</a></p>
+  </footer>
+
+  <!-- ══ FAB WPP ══ -->
+  <div class="fab">
+    <span class="fab-tip">Falar no WhatsApp</span>
+    <a id="btn-fab-wpp" href="#" target="_blank" rel="noopener" aria-label="WhatsApp">
+      <svg viewBox="0 0 24 24" fill="white" width="28" height="28">
+        <path
+          d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+        <path
+          d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.659 1.438 5.168L2 22l4.956-1.418A9.96 9.96 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.96 7.96 0 01-4.037-1.1l-.29-.173-2.94.841.854-2.868-.19-.295A7.96 7.96 0 014 12c0-4.411 3.589-8 8-8s8 3.589 8 8-3.589 8-8 8z" />
+      </svg>
+    </a>
   </div>
 
   <script src="frontend/assets/js/config.js"></script>
-  <script src="frontend/assets/js/ui.js"></script>
-  <script src="frontend/assets/js/auth.js"></script>
   <script>
+    const _sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+
+    function wppLink(course = '') {
+      const n = CONFIG.WHATSAPP_NUMBER;
+      const m = course
+        ? `Olá! Tenho interesse no curso "${course}". Como faço para adquirir?`
+        : CONFIG.WHATSAPP_MESSAGE;
+      return `https://wa.me/${n}?text=${encodeURIComponent(m)}`;
+    }
+
+    function esc(s) {
+      return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function coverUrl(path) {
+      if (!path) return null;
+      const { data } = _sb.storage.from(CONFIG.BUCKET_COVERS).getPublicUrl(path);
+      return data?.publicUrl || null;
+    }
+
+    // Configura todos os botões WPP estáticos
+    ['btn-nav-wpp', 'btn-hero-wpp', 'btn-footer-wpp', 'btn-fab-wpp'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.href = wppLink();
+    });
+
+    // Redireciona usuário logado para seu dashboard
     (async () => {
-      const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
-      const { data: { session } } = await sb.auth.getSession();
-
-      if (!session) {
-        window.location.href = 'login.html';
-        return;
-      }
-
-      // Busca role do perfil
-      const { data: profile } = await sb
-        .from('users')
-        .select('role')
-        .eq('id', session.user.id)
-        .single();
-
-      if (!profile) {
-        await sb.auth.signOut();
-        window.location.href = 'login.html';
-        return;
-      }
-
-      if (profile.role === 'admin') {
-        window.location.href = 'frontend/pages/admin/dashboard.html';
-      } else {
-        window.location.href = 'frontend/pages/student/dashboard.html';
+      const { data: { session } } = await _sb.auth.getSession();
+      if (session) {
+        const { data: p } = await _sb.from('users').select('role').eq('id', session.user.id).single();
+        if (p) {
+          window.location.href = p.role === 'admin'
+            ? 'frontend/pages/admin/dashboard.html'
+            : 'frontend/pages/student/dashboard.html';
+          return;
+        }
       }
     })();
+
+    // Carrega cursos
+    async function loadCourses() {
+      const grid = document.getElementById('courses-grid');
+      const statEl = document.getElementById('stat-cursos');
+      try {
+        const { data, error } = await _sb
+          .from('courses')
+          .select('id,title,description,cover_image_path')
+          .eq('active', true)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        if (statEl) statEl.textContent = data?.length ?? 0;
+
+        if (!data?.length) {
+          grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:4rem 2rem;color:var(--txt2)"><div style="font-size:3rem;opacity:.4;margin-bottom:1rem">📚</div><strong style="display:block;margin-bottom:.4rem;color:var(--txt)">Novos cursos em breve!</strong><p>Entre em contato via WhatsApp para saber quando publicaremos os próximos conteúdos.</p></div>`;
+          return;
+        }
+
+        grid.innerHTML = data.map(c => {
+          const cover = coverUrl(c.cover_image_path);
+          return `
+        <div class="course-card">
+          ${cover ? `<img class="c-cover" src="${esc(cover)}" alt="${esc(c.title)}" loading="lazy"/>` : `<div class="c-cover-ph">📚</div>`}
+          <div class="c-body">
+            <span class="c-badge">📄 Curso & Ebook</span>
+            <h2 class="c-title">${esc(c.title)}</h2>
+            <p class="c-desc">${esc(c.description || 'Material completo com tudo que você precisa para dominar o assunto.')}</p>
+          </div>
+          <div class="c-footer">
+            <a href="${wppLink(c.title)}" target="_blank" rel="noopener" class="c-cta">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.659 1.438 5.168L2 22l4.956-1.418A9.96 9.96 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.96 7.96 0 01-4.037-1.1l-.29-.173-2.94.841.854-2.868-.19-.295A7.96 7.96 0 014 12c0-4.411 3.589-8 8-8s8 3.589 8 8-3.589 8-8 8z"/></svg>
+              Quero este curso — WhatsApp
+            </a>
+          </div>
+        </div>`;
+        }).join('');
+      } catch (e) {
+        console.error(e);
+        if (statEl) statEl.textContent = '?';
+        grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--txt2)"><div style="font-size:2rem;margin-bottom:.5rem">⚠️</div>Não foi possível carregar os cursos.</div>`;
+      }
+    }
+
+    loadCourses();
   </script>
 </body>
+
 </html>
