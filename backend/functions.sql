@@ -111,6 +111,36 @@ BEGIN
         NOW()
     );
 
+    -- ── PASSO 3.5: Criar identidade em auth.identities ───────
+    -- CRÍTICO: Supabase GoTrue v2 exige um registro em
+    -- auth.identities para que signInWithPassword() funcione.
+    -- Sem isso, o usuário existe mas NÃO consegue fazer login.
+    INSERT INTO auth.identities (
+        id,
+        user_id,
+        identity_data,
+        provider,
+        provider_id,
+        last_sign_in_at,
+        created_at,
+        updated_at
+    )
+    VALUES (
+        v_new_user_id,          -- id da identidade (pode ser = user_id)
+        v_new_user_id,          -- referência ao auth.users
+        jsonb_build_object(
+            'sub', v_new_user_id::TEXT,
+            'email', lower(trim(p_email)),
+            'email_verified', true,
+            'full_name', p_full_name
+        ),
+        'email',                -- provider = email
+        lower(trim(p_email)),   -- provider_id = email do usuário
+        NOW(),
+        NOW(),
+        NOW()
+    );
+
     -- ── PASSO 4: Inserir/garantir perfil em public.users ─────
     -- O trigger handle_new_auth_user() deveria cuidar disso,
     -- mas fazemos manualmente como fallback de segurança.
