@@ -1,12 +1,13 @@
 -- ============================================================
--- HOTFIX: Habilitar pgcrypto + Recriar admin_create_user
+-- HOTFIX: Corrigir gen_salt + pgcrypto no Supabase
+-- No Supabase, extensões ficam no schema "extensions".
 -- Cole e execute no SQL Editor do Supabase.
 -- ============================================================
 
--- 1) Habilitar extensão pgcrypto (crypt + gen_salt)
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+-- 1) Habilitar pgcrypto (pode já estar habilitada)
+CREATE EXTENSION IF NOT EXISTS "pgcrypto" SCHEMA extensions;
 
--- 2) Recriar a função admin_create_user (agora com pgcrypto disponível)
+-- 2) Recriar admin_create_user com search_path corrigido
 CREATE OR REPLACE FUNCTION public.admin_create_user(
     p_email     TEXT,
     p_password  TEXT,
@@ -16,7 +17,7 @@ CREATE OR REPLACE FUNCTION public.admin_create_user(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
     v_caller_role   TEXT;
@@ -25,7 +26,6 @@ DECLARE
     v_hashed_pw     TEXT;
     v_result        JSONB;
 BEGIN
-    -- Verificar se quem chama é Admin
     v_caller_id := auth.uid();
 
     IF v_caller_id IS NULL THEN
@@ -40,7 +40,6 @@ BEGIN
         RAISE EXCEPTION 'FORBIDDEN: Apenas administradores podem criar usuários.';
     END IF;
 
-    -- Validações
     IF p_email IS NULL OR trim(p_email) = '' THEN
         RAISE EXCEPTION 'VALIDATION: Email é obrigatório.';
     END IF;
@@ -61,7 +60,6 @@ BEGIN
         RAISE EXCEPTION 'CONFLICT: Este email já está cadastrado na plataforma.';
     END IF;
 
-    -- Criar usuário
     v_new_user_id := gen_random_uuid();
     v_hashed_pw := crypt(p_password, gen_salt('bf'));
 
@@ -83,7 +81,6 @@ BEGIN
         NOW()
     );
 
-    -- Inserir perfil público
     INSERT INTO public.users (id, full_name, email, role, created_at)
     VALUES (v_new_user_id, trim(p_full_name), lower(trim(p_email)), p_role, NOW())
     ON CONFLICT (id) DO UPDATE
@@ -108,14 +105,14 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.admin_create_user(TEXT, TEXT, TEXT, TEXT) TO authenticated;
 
--- 3) Recriar admin_delete_user (para garantir que está atualizada)
+-- 3) Recriar admin_delete_user
 CREATE OR REPLACE FUNCTION public.admin_delete_user(
     p_target_user_id UUID
 )
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
     v_caller_role   TEXT;
@@ -166,7 +163,7 @@ CREATE OR REPLACE FUNCTION public.get_admin_stats()
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
     v_caller_role   TEXT;
@@ -205,7 +202,7 @@ RETURNS TABLE (
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 BEGIN
     RETURN QUERY
@@ -234,7 +231,7 @@ CREATE OR REPLACE FUNCTION public.check_course_access(
 RETURNS BOOLEAN
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
     v_caller_id   UUID;
@@ -267,4 +264,4 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.check_course_access(UUID) TO authenticated;
 
--- ✅ FEITO! Todas as funções foram recriadas com pgcrypto habilitado.
+-- ✅ FEITO! Todas as funções agora incluem "extensions" no search_path.

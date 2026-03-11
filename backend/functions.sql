@@ -30,7 +30,7 @@ CREATE OR REPLACE FUNCTION public.admin_create_user(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER  -- ← CRÍTICO: Roda com privilégios de superuser
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
     v_caller_role   TEXT;
@@ -159,7 +159,7 @@ CREATE OR REPLACE FUNCTION public.admin_delete_user(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
     v_caller_role   TEXT;
@@ -229,7 +229,7 @@ RETURNS TABLE (
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 BEGIN
     RETURN QUERY
@@ -266,7 +266,7 @@ CREATE OR REPLACE FUNCTION public.check_course_access(
 RETURNS BOOLEAN
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
     v_caller_id   UUID;
@@ -312,7 +312,7 @@ CREATE OR REPLACE FUNCTION public.get_admin_stats()
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
     v_caller_role   TEXT;
