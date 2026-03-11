@@ -43,7 +43,7 @@ const Auth = (() => {
                 'Email not confirmed': 'Você precisa confirmar seu email antes de entrar.',
                 'Too many requests': 'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
             };
-            throw new Error(messages[error.message] || 'Falha no login. Tente novamente.');
+            throw new Error(messages[error.message] || `Falha no login: ${error.message}`);
         }
 
         _cachedUser = data.user;

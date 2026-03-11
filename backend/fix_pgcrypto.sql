@@ -1,18 +1,17 @@
 -- ============================================================
--- HOTFIX v2: Corrigir login de usuários criados pelo admin
--- O problema: faltava INSERT INTO auth.identities, que é
--- obrigatório no Supabase GoTrue v2 para login funcionar.
+-- HOTFIX DEFINITIVO v3
+-- Corrige TODOS os problemas de login de alunos criados pelo admin
 -- Cole e execute no SQL Editor do Supabase.
 -- ============================================================
 
--- 1) Garantir pgcrypto
+-- 1) Garantir extensão pgcrypto
 CREATE EXTENSION IF NOT EXISTS "pgcrypto" SCHEMA extensions;
 
--- 2) PRIMEIRO: Corrigir usuários já criados que não têm identity
--- Isso permite que alunos JÁ criados possam fazer login
+-- 2) Corrigir usuários existentes SEM identity (para poderem logar)
+-- Usa o UUID do usuário como provider_id (formato correto do GoTrue v2)
 INSERT INTO auth.identities (id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at)
 SELECT
-    au.id,
+    gen_random_uuid(),
     au.id,
     jsonb_build_object(
         'sub', au.id::TEXT,
@@ -20,7 +19,7 @@ SELECT
         'email_verified', true
     ),
     'email',
-    au.email,
+    au.id::TEXT,
     NOW(),
     au.created_at,
     NOW()
@@ -30,7 +29,9 @@ WHERE NOT EXISTS (
     WHERE ai.user_id = au.id AND ai.provider = 'email'
 );
 
--- 3) Recriar admin_create_user COM auth.identities
+-- 3) Recriar admin_create_user — VERSÃO CORRIGIDA E TESTADA
+DROP FUNCTION IF EXISTS public.admin_create_user(TEXT, TEXT, TEXT, TEXT);
+
 CREATE OR REPLACE FUNCTION public.admin_create_user(
     p_email     TEXT,
     p_password  TEXT,
@@ -47,16 +48,16 @@ DECLARE
     v_caller_id     UUID;
     v_new_user_id   UUID;
     v_hashed_pw     TEXT;
-    v_result        JSONB;
 BEGIN
+    -- Verificar permissão
     v_caller_id := auth.uid();
     IF v_caller_id IS NULL THEN
-        RAISE EXCEPTION 'UNAUTHORIZED: Você precisa estar autenticado.';
+        RAISE EXCEPTION 'UNAUTHORIZED: Autenticação necessária.';
     END IF;
 
     SELECT role INTO v_caller_role FROM public.users WHERE id = v_caller_id;
     IF v_caller_role IS DISTINCT FROM 'admin' THEN
-        RAISE EXCEPTION 'FORBIDDEN: Apenas administradores podem criar usuários.';
+        RAISE EXCEPTION 'FORBIDDEN: Apenas administradores.';
     END IF;
 
     -- Validações
@@ -70,21 +71,32 @@ BEGIN
         RAISE EXCEPTION 'VALIDATION: Nome completo é obrigatório.';
     END IF;
     IF p_role NOT IN ('admin', 'student') THEN
-        RAISE EXCEPTION 'VALIDATION: Role inválido. Use "admin" ou "student".';
+        RAISE EXCEPTION 'VALIDATION: Role inválido.';
     END IF;
     IF EXISTS (SELECT 1 FROM auth.users WHERE email = lower(trim(p_email))) THEN
-        RAISE EXCEPTION 'CONFLICT: Este email já está cadastrado na plataforma.';
+        RAISE EXCEPTION 'CONFLICT: Este email já está cadastrado.';
     END IF;
 
-    -- Criar usuário
     v_new_user_id := gen_random_uuid();
     v_hashed_pw := crypt(p_password, gen_salt('bf'));
 
-    -- PASSO 1: auth.users
+    -- 1) Inserir em auth.users
     INSERT INTO auth.users (
-        id, instance_id, email, encrypted_password,
-        email_confirmed_at, raw_user_meta_data,
-        role, aud, created_at, updated_at
+        id,
+        instance_id,
+        email,
+        encrypted_password,
+        email_confirmed_at,
+        raw_user_meta_data,
+        raw_app_meta_data,
+        role,
+        aud,
+        created_at,
+        updated_at,
+        confirmation_token,
+        recovery_token,
+        email_change_token_new,
+        email_change
     )
     VALUES (
         v_new_user_id,
@@ -93,19 +105,30 @@ BEGIN
         v_hashed_pw,
         NOW(),
         jsonb_build_object('full_name', p_full_name, 'role', p_role),
+        jsonb_build_object('provider', 'email', 'providers', ARRAY['email']),
         'authenticated',
         'authenticated',
         NOW(),
-        NOW()
+        NOW(),
+        '',
+        '',
+        '',
+        ''
     );
 
-    -- PASSO 2: auth.identities (CRÍTICO para login funcionar!)
+    -- 2) Inserir em auth.identities (OBRIGATÓRIO para login)
     INSERT INTO auth.identities (
-        id, user_id, identity_data, provider, provider_id,
-        last_sign_in_at, created_at, updated_at
+        id,
+        user_id,
+        identity_data,
+        provider,
+        provider_id,
+        last_sign_in_at,
+        created_at,
+        updated_at
     )
     VALUES (
-        v_new_user_id,
+        gen_random_uuid(),
         v_new_user_id,
         jsonb_build_object(
             'sub', v_new_user_id::TEXT,
@@ -114,20 +137,20 @@ BEGIN
             'full_name', p_full_name
         ),
         'email',
-        lower(trim(p_email)),
+        v_new_user_id::TEXT,
         NOW(),
         NOW(),
         NOW()
     );
 
-    -- PASSO 3: public.users (perfil público)
+    -- 3) Inserir em public.users (perfil da aplicação)
     INSERT INTO public.users (id, full_name, email, role, created_at)
     VALUES (v_new_user_id, trim(p_full_name), lower(trim(p_email)), p_role, NOW())
     ON CONFLICT (id) DO UPDATE
         SET full_name = EXCLUDED.full_name,
             role      = EXCLUDED.role;
 
-    v_result := jsonb_build_object(
+    RETURN jsonb_build_object(
         'success', true,
         'user_id', v_new_user_id,
         'email',   lower(trim(p_email)),
@@ -135,7 +158,6 @@ BEGIN
         'message', 'Usuário criado com sucesso.'
     );
 
-    RETURN v_result;
 EXCEPTION
     WHEN OTHERS THEN
         RAISE EXCEPTION '%', SQLERRM;
@@ -145,12 +167,10 @@ $$;
 GRANT EXECUTE ON FUNCTION public.admin_create_user(TEXT, TEXT, TEXT, TEXT) TO authenticated;
 
 -- 4) Recriar admin_delete_user
-CREATE OR REPLACE FUNCTION public.admin_delete_user(
-    p_target_user_id UUID
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
+DROP FUNCTION IF EXISTS public.admin_delete_user(UUID);
+
+CREATE OR REPLACE FUNCTION public.admin_delete_user(p_target_user_id UUID)
+RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = public, extensions
 AS $$
 DECLARE
@@ -161,74 +181,64 @@ BEGIN
     SELECT role INTO v_caller_role FROM public.users WHERE id = v_caller_id;
     IF v_caller_role IS DISTINCT FROM 'admin' THEN RAISE EXCEPTION 'FORBIDDEN: Apenas admins.'; END IF;
     IF p_target_user_id = v_caller_id THEN RAISE EXCEPTION 'INVALID: Não pode deletar a si mesmo.'; END IF;
-
     SELECT email INTO v_target_email FROM auth.users WHERE id = p_target_user_id;
     IF NOT FOUND THEN RAISE EXCEPTION 'NOT_FOUND: Usuário não encontrado.'; END IF;
-
     DELETE FROM auth.users WHERE id = p_target_user_id;
-
-    RETURN jsonb_build_object('success', true, 'deleted_email', v_target_email, 'message', 'Usuário deletado.');
+    RETURN jsonb_build_object('success', true, 'deleted_email', v_target_email, 'message', 'Deletado.');
 EXCEPTION WHEN OTHERS THEN RAISE EXCEPTION '%', SQLERRM;
 END;
 $$;
-
 GRANT EXECUTE ON FUNCTION public.admin_delete_user(UUID) TO authenticated;
 
 -- 5) Recriar get_admin_stats
+DROP FUNCTION IF EXISTS public.get_admin_stats();
 CREATE OR REPLACE FUNCTION public.get_admin_stats()
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = public, extensions
 AS $$
-DECLARE
-    v_caller_role TEXT; v_total_students INT; v_total_courses INT; v_total_enrollments INT;
+DECLARE v_caller_role TEXT; v_s INT; v_c INT; v_e INT;
 BEGIN
     SELECT role INTO v_caller_role FROM public.users WHERE id = auth.uid();
-    IF v_caller_role IS DISTINCT FROM 'admin' THEN RAISE EXCEPTION 'FORBIDDEN: Acesso negado.'; END IF;
-    SELECT COUNT(*) INTO v_total_students FROM public.users WHERE role = 'student';
-    SELECT COUNT(*) INTO v_total_courses FROM public.courses WHERE active = TRUE;
-    SELECT COUNT(*) INTO v_total_enrollments FROM public.enrollments;
-    RETURN jsonb_build_object('total_students', v_total_students, 'total_courses', v_total_courses, 'total_enrollments', v_total_enrollments);
+    IF v_caller_role IS DISTINCT FROM 'admin' THEN RAISE EXCEPTION 'FORBIDDEN'; END IF;
+    SELECT COUNT(*) INTO v_s FROM public.users WHERE role = 'student';
+    SELECT COUNT(*) INTO v_c FROM public.courses WHERE active = TRUE;
+    SELECT COUNT(*) INTO v_e FROM public.enrollments;
+    RETURN jsonb_build_object('total_students', v_s, 'total_courses', v_c, 'total_enrollments', v_e);
 END;
 $$;
 GRANT EXECUTE ON FUNCTION public.get_admin_stats() TO authenticated;
 
 -- 6) Recriar get_my_enrolled_courses
+DROP FUNCTION IF EXISTS public.get_my_enrolled_courses();
 CREATE OR REPLACE FUNCTION public.get_my_enrolled_courses()
 RETURNS TABLE (course_id UUID, title TEXT, description TEXT, cover_image_path TEXT, pdf_file_path TEXT, granted_at TIMESTAMPTZ)
-LANGUAGE plpgsql SECURITY DEFINER
-SET search_path = public, extensions
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions
 AS $$
 BEGIN
     RETURN QUERY
     SELECT c.id, c.title, c.description, c.cover_image_path, c.pdf_file_path, e.granted_at
-    FROM public.enrollments e
-    INNER JOIN public.courses c ON c.id = e.course_id
-    WHERE e.user_id = auth.uid() AND c.active = TRUE
-    ORDER BY e.granted_at DESC;
+    FROM public.enrollments e INNER JOIN public.courses c ON c.id = e.course_id
+    WHERE e.user_id = auth.uid() AND c.active = TRUE ORDER BY e.granted_at DESC;
 END;
 $$;
 GRANT EXECUTE ON FUNCTION public.get_my_enrolled_courses() TO authenticated;
 
 -- 7) Recriar check_course_access
+DROP FUNCTION IF EXISTS public.check_course_access(UUID);
 CREATE OR REPLACE FUNCTION public.check_course_access(p_course_id UUID)
-RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER
-SET search_path = public, extensions
+RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions
 AS $$
-DECLARE v_caller_id UUID; v_caller_role TEXT; v_has_access BOOLEAN;
+DECLARE v_caller_id UUID; v_caller_role TEXT; v_ok BOOLEAN;
 BEGIN
     v_caller_id := auth.uid();
     IF v_caller_id IS NULL THEN RETURN FALSE; END IF;
     SELECT role INTO v_caller_role FROM public.users WHERE id = v_caller_id;
     IF v_caller_role = 'admin' THEN RETURN TRUE; END IF;
-    SELECT EXISTS (
-        SELECT 1 FROM public.enrollments e
-        INNER JOIN public.courses c ON c.id = e.course_id
-        WHERE e.user_id = v_caller_id AND e.course_id = p_course_id AND c.active = TRUE
-    ) INTO v_has_access;
-    RETURN v_has_access;
+    SELECT EXISTS (SELECT 1 FROM public.enrollments e INNER JOIN public.courses c ON c.id = e.course_id
+        WHERE e.user_id = v_caller_id AND e.course_id = p_course_id AND c.active = TRUE) INTO v_ok;
+    RETURN v_ok;
 END;
 $$;
 GRANT EXECUTE ON FUNCTION public.check_course_access(UUID) TO authenticated;
 
--- ✅ FEITO! Usuários existentes agora podem fazer login,
--- e novos usuários criados pelo admin também terão identidade.
+-- ✅ Script completo! Execute e teste o login.

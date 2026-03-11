@@ -88,33 +88,39 @@ BEGIN
         instance_id,
         email,
         encrypted_password,
-        email_confirmed_at,   -- Confirma email imediatamente (Admin-created = trusted)
+        email_confirmed_at,
         raw_user_meta_data,
+        raw_app_meta_data,
         role,
         aud,
         created_at,
-        updated_at
+        updated_at,
+        confirmation_token,
+        recovery_token,
+        email_change_token_new,
+        email_change
     )
     VALUES (
         v_new_user_id,
-        '00000000-0000-0000-0000-000000000000',  -- Instance ID padrão do Supabase
+        '00000000-0000-0000-0000-000000000000',
         lower(trim(p_email)),
         v_hashed_pw,
-        NOW(),                                    -- Email confirmado imediatamente
-        jsonb_build_object(
-            'full_name', p_full_name,
-            'role', p_role
-        ),
+        NOW(),
+        jsonb_build_object('full_name', p_full_name, 'role', p_role),
+        jsonb_build_object('provider', 'email', 'providers', ARRAY['email']),
         'authenticated',
         'authenticated',
         NOW(),
-        NOW()
+        NOW(),
+        '',
+        '',
+        '',
+        ''
     );
 
     -- ── PASSO 3.5: Criar identidade em auth.identities ───────
-    -- CRÍTICO: Supabase GoTrue v2 exige um registro em
-    -- auth.identities para que signInWithPassword() funcione.
-    -- Sem isso, o usuário existe mas NÃO consegue fazer login.
+    -- CRÍTICO: GoTrue v2 exige este registro para login funcionar.
+    -- provider_id DEVE ser o UUID do usuário como TEXT (formato GoTrue v2).
     INSERT INTO auth.identities (
         id,
         user_id,
@@ -126,24 +132,22 @@ BEGIN
         updated_at
     )
     VALUES (
-        v_new_user_id,          -- id da identidade (pode ser = user_id)
-        v_new_user_id,          -- referência ao auth.users
+        gen_random_uuid(),
+        v_new_user_id,
         jsonb_build_object(
             'sub', v_new_user_id::TEXT,
             'email', lower(trim(p_email)),
             'email_verified', true,
             'full_name', p_full_name
         ),
-        'email',                -- provider = email
-        lower(trim(p_email)),   -- provider_id = email do usuário
+        'email',
+        v_new_user_id::TEXT,
         NOW(),
         NOW(),
         NOW()
     );
 
-    -- ── PASSO 4: Inserir/garantir perfil em public.users ─────
-    -- O trigger handle_new_auth_user() deveria cuidar disso,
-    -- mas fazemos manualmente como fallback de segurança.
+    -- ── PASSO 4: Inserir perfil em public.users ──────────────
     INSERT INTO public.users (id, full_name, email, role, created_at)
     VALUES (v_new_user_id, trim(p_full_name), lower(trim(p_email)), p_role, NOW())
     ON CONFLICT (id) DO UPDATE
