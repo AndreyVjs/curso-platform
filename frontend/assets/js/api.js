@@ -1,5 +1,5 @@
 // ============================================================
-// CURSO PLATFORM — api.js
+// CURSOS LUCRATIVOS — api.js
 // Camada de Acesso a Dados: Wrapper do Supabase
 // Todas as operações de banco passam por aqui
 // ============================================================

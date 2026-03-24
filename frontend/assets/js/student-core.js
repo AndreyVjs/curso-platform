@@ -1,5 +1,5 @@
 // ============================================================
-// CURSO PLATFORM — student-core.js
+// CURSOS LUCRATIVOS — student-core.js
 // Lógica exclusiva da Área do Aluno
 // ============================================================
 
@@ -211,7 +211,7 @@ const StudentCore = (() => {
       if (descEl) descEl.textContent = course.description || 'Material exclusivo da plataforma.';
 
       // Atualiza o <title> da página
-      document.title = `${course.title} — CursoPlataforma`;
+      document.title = `${course.title} — CursosLucrativos`;
 
       // Se não houver PDF, desabilita o botão
       if (downloadBtn && !course.pdf_file_path) {

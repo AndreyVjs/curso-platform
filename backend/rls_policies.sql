@@ -1,5 +1,5 @@
 -- ============================================================
--- CURSO PLATFORM — RLS_POLICIES.SQL
+-- CURSOS LUCRATIVOS — RLS_POLICIES.SQL
 -- Fase 1: Row Level Security — Segurança em Nível de Linha
 -- Execute este arquivo POR ÚLTIMO, após functions.sql.
 -- ============================================================

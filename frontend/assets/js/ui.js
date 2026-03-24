@@ -1,5 +1,5 @@
 // ============================================================
-// CURSO PLATFORM — ui.js
+// CURSOS LUCRATIVOS — ui.js
 // DOM Helpers: Toasts, Modais, Loading, Utilitários de UI
 // ============================================================
 

@@ -1,5 +1,5 @@
 -- ============================================================
--- CURSO PLATFORM — TRIGGERS.SQL
+-- CURSOS LUCRATIVOS — TRIGGERS.SQL
 -- Fase 1: Automações de Banco de Dados
 -- Execute este arquivo APÓS schema.sql.
 -- ============================================================

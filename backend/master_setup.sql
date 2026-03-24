@@ -1,5 +1,5 @@
 -- ============================================================
--- CURSO PLATFORM — SCHEMA.SQL
+-- CURSOS LUCRATIVOS — SCHEMA.SQL
 -- Fase 1: Criação das Tabelas, Extensões e Configurações Base
 -- Execute este arquivo PRIMEIRO no SQL Editor do Supabase.
 -- ============================================================
@@ -74,7 +74,7 @@ CREATE INDEX IF NOT EXISTS idx_courses_active        ON public.courses(active);
 --- INICIO DE ARQUIVO ---
 
 -- ============================================================
--- CURSO PLATFORM — TRIGGERS.SQL
+-- CURSOS LUCRATIVOS — TRIGGERS.SQL
 -- Fase 1: Automações de Banco de Dados
 -- Execute este arquivo APÓS schema.sql.
 -- ============================================================
@@ -179,7 +179,7 @@ CREATE TRIGGER on_auth_user_email_updated
 --- INICIO DE ARQUIVO ---
 
 -- ============================================================
--- CURSO PLATFORM — FUNCTIONS.SQL
+-- CURSOS LUCRATIVOS — FUNCTIONS.SQL
 -- Fase 1: RPCs (Remote Procedure Calls) em PL/pgSQL
 -- Execute este arquivo APÓS triggers.sql.
 -- ATENÇÃO: Estas funções usam SECURITY DEFINER e acessam
@@ -524,7 +524,7 @@ GRANT EXECUTE ON FUNCTION public.get_admin_stats() TO authenticated;
 --- INICIO DE ARQUIVO ---
 
 -- ============================================================
--- CURSO PLATFORM — RLS_POLICIES.SQL
+-- CURSOS LUCRATIVOS — RLS_POLICIES.SQL
 -- Fase 1: Row Level Security — Segurança em Nível de Linha
 -- Execute este arquivo POR ÚLTIMO, após functions.sql.
 -- ============================================================

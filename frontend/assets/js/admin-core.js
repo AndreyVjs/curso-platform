@@ -1,5 +1,5 @@
 // ============================================================
-// CURSO PLATFORM — admin-core.js
+// CURSOS LUCRATIVOS — admin-core.js
 // Lógica exclusiva do painel Admin
 // ============================================================
 

@@ -1,5 +1,5 @@
 -- ============================================================
--- CURSO PLATFORM — SCHEMA.SQL
+-- CURSOS LUCRATIVOS — SCHEMA.SQL
 -- Fase 1: Criação das Tabelas, Extensões e Configurações Base
 -- Execute este arquivo PRIMEIRO no SQL Editor do Supabase.
 -- ============================================================

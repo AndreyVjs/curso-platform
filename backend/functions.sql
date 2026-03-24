@@ -1,5 +1,5 @@
 -- ============================================================
--- CURSO PLATFORM — FUNCTIONS.SQL
+-- CURSOS LUCRATIVOS — FUNCTIONS.SQL
 -- Fase 1: RPCs (Remote Procedure Calls) em PL/pgSQL
 -- Execute este arquivo APÓS triggers.sql.
 -- ATENÇÃO: Estas funções usam SECURITY DEFINER e acessam

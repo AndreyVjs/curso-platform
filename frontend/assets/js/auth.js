@@ -1,5 +1,5 @@
 // ============================================================
-// CURSO PLATFORM — auth.js
+// CURSOS LUCRATIVOS — auth.js
 // Autenticação, Sessão, Guarding por Role
 // ============================================================
 

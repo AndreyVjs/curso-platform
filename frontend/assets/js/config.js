@@ -1,5 +1,5 @@
 // ============================================================
-// CURSO PLATFORM — config.js
+// CURSOS LUCRATIVOS — config.js
 // Configuração Central: Supabase e constantes da plataforma
 // ============================================================
 
