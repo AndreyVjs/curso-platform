@@ -218,20 +218,29 @@ const AdminCore = (() => {
         grid.innerHTML = users.map(u => `
             <div class="card" style="display: flex; flex-direction: column; height: 100%;">
                 <div class="card-body" style="flex: 1; display:flex; flex-direction:column; align-items:center; text-align:center; gap:var(--space-4);">
-                    <div class="avatar" style="width: 64px; height: 64px; font-size: 1.5rem; background: linear-gradient(135deg, var(--primary), var(--primary-hover)); display: flex; align-items: center; justify-content: center; color: white; border-radius: 50%;">${UI.initials(u.full_name)}</div>
+                    <div style="position:relative;">
+                        <div class="avatar" style="width: 64px; height: 64px; font-size: 1.5rem; background: linear-gradient(135deg, var(--primary), var(--primary-hover)); display: flex; align-items: center; justify-content: center; color: white; border-radius: 50%;">${UI.initials(u.full_name)}</div>
+                        ${u.is_vip ? '<div style="position:absolute;bottom:-4px;right:-4px;background:#f59e0b;color:#fff;font-size:.55rem;font-weight:700;padding:2px 5px;border-radius:999px;letter-spacing:.04em;">VIP</div>' : ''}
+                    </div>
                     <div>
                         <h3 style="font-family: var(--font-heading); font-size: var(--text-lg); font-weight: var(--weight-semibold); margin-bottom: 2px;">${UI.escapeHtml(u.full_name)}</h3>
                         <p style="color: var(--text-secondary); font-size: var(--text-sm);">${UI.escapeHtml(u.email)}</p>
                     </div>
-                    <div style="font-size: var(--text-xs); color: var(--text-muted); background: var(--bg-secondary); padding: 4px 12px; border-radius: 12px;">
-                        Cadastrado em ${UI.formatDate(u.created_at)}
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">
+                        <div style="font-size: var(--text-xs); color: var(--text-muted); background: var(--bg-secondary); padding: 4px 12px; border-radius: 12px;">
+                            Cadastrado em ${UI.formatDate(u.created_at)}
+                        </div>
+                        ${u.is_vip ? '<span style="font-size:var(--text-xs);background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:999px;font-weight:600;">⭐ Assinante Premium</span>' : ''}
                     </div>
                 </div>
-                <div class="card-footer" style="display:flex; gap:var(--space-2); justify-content:center; background:var(--bg-secondary); padding:var(--space-4);">
-                    <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="AdminCore.editUser('${u.id}', '${UI.escapeHtml(u.full_name)}', '${UI.escapeHtml(u.email)}')">
+                <div class="card-footer" style="display:flex; gap:var(--space-2); flex-wrap:wrap; justify-content:center; background:var(--bg-secondary); padding:var(--space-4);">
+                    <button class="btn btn-secondary btn-sm" style="flex:1;min-width:90px;" onclick="AdminCore.editUser('${u.id}', '${UI.escapeHtml(u.full_name)}', '${UI.escapeHtml(u.email)}')">
                         ✏️ Editar
                     </button>
-                    <button class="btn btn-danger btn-sm" style="flex:1;" onclick="AdminCore.confirmDeleteUser('${u.id}', '${UI.escapeHtml(u.full_name)}')">
+                    <button class="btn btn-sm" style="flex:1;min-width:90px;background:${u.is_vip ? '#fef3c7' : 'var(--primary-light)'};color:${u.is_vip ? '#92400e' : 'var(--primary)'};border:1.5px solid ${u.is_vip ? '#fde68a' : 'var(--primary-light)'};" onclick="AdminCore.toggleVip('${u.id}', ${u.is_vip}, '${UI.escapeHtml(u.full_name)}')">
+                        ${u.is_vip ? '⭐ Remover VIP' : '⭐ Dar VIP'}
+                    </button>
+                    <button class="btn btn-danger btn-sm" style="flex:1;min-width:90px;" onclick="AdminCore.confirmDeleteUser('${u.id}', '${UI.escapeHtml(u.full_name)}')">
                         🗑 Remover
                     </button>
                 </div>
@@ -471,6 +480,9 @@ const AdminCore = (() => {
 
         await loadCourses();
 
+        // Popular datalist de categorias com as já existentes
+        _populateCategoryDatalist();
+
         // Abrir modal
         document.getElementById('btn-new-course')?.addEventListener('click', () => {
             document.getElementById('edit-course-id').value = '';
@@ -498,6 +510,15 @@ const AdminCore = (() => {
             e.preventDefault();
             await handleCreateCourse();
         });
+    }
+
+    async function _populateCategoryDatalist() {
+        const datalist = document.getElementById('categories-datalist');
+        if (!datalist) return;
+        try {
+            const categories = await API.getDistinctCategories();
+            datalist.innerHTML = categories.map(c => `<option value="${UI.escapeHtml(c)}"></option>`).join('');
+        } catch (_) { /* silencioso */ }
     }
 
     function setupFileInput(inputId, displayTextId, placeholder, allowedExts) {
@@ -556,6 +577,7 @@ const AdminCore = (() => {
         const courseId = document.getElementById('edit-course-id').value;
         const title = document.getElementById('course-title').value.trim();
         const description = document.getElementById('course-description').value.trim();
+        const category = (document.getElementById('course-category')?.value || '').trim();
         const coverFile = document.getElementById('cover-file').files[0] || null;
         const pdfFile = document.getElementById('pdf-file').files[0] || null;
 
@@ -575,15 +597,16 @@ const AdminCore = (() => {
 
         try {
             if (courseId) {
-                await API.updateCourse(courseId, { title, description, coverFile, pdfFile });
+                await API.updateCourse(courseId, { title, description, category, coverFile, pdfFile });
                 UI.toastSuccess(`Curso "${title}" atualizado com sucesso!`);
             } else {
-                await API.createCourse({ title, description, coverFile, pdfFile });
+                await API.createCourse({ title, description, category, coverFile, pdfFile });
                 UI.toastSuccess(`Curso "${title}" criado com sucesso!`);
             }
 
             UI.closeModal('modal-create-course');
             await loadCourses();
+            _populateCategoryDatalist(); // Atualiza sugestões após salvar
 
         } catch (err) {
             UI.resetButton(btn);
@@ -670,6 +693,8 @@ const AdminCore = (() => {
             document.getElementById('edit-course-id').value = course.id;
             document.getElementById('course-title').value = course.title;
             document.getElementById('course-description').value = course.description || '';
+            const catInput = document.getElementById('course-category');
+            if (catInput) catInput.value = course.category || '';
 
             document.getElementById('modal-course-title').textContent = 'Editar Curso';
             document.getElementById('btn-save-course').textContent = '📤 Salvar Alterações';
@@ -837,6 +862,209 @@ const AdminCore = (() => {
     }
 
 
+    // ── Toggle VIP ────────────────────────────────────────────
+
+    async function toggleVip(userId, currentVip, userName) {
+        const newVip = !currentVip;
+        const action = newVip ? 'tornar VIP (acesso a todos os cursos)' : 'remover o acesso VIP de';
+        if (!confirm(`Deseja ${action} "${userName}"?`)) return;
+
+        try {
+            await API.toggleVip(userId, newVip);
+            UI.toastSuccess(newVip
+                ? `"${userName}" agora é Assinante Premium e tem acesso a todos os cursos!`
+                : `Acesso VIP de "${userName}" removido. Apenas cursos matriculados visíveis.`
+            );
+            await loadUsers();
+        } catch (err) {
+            UI.toastError('Erro ao atualizar VIP: ' + err.message);
+        }
+    }
+
+
+    // ================================================================
+    // MÓDULO: Bundles (Pacotes de Cursos)
+    // ================================================================
+
+    async function initBundles() {
+        const result = await initLayout('bundles');
+        if (!result) return;
+        UI.restoreDark();
+
+        await Promise.all([loadBundles(), _populateBundleSelects()]);
+
+        // Abrir modal de criação
+        document.getElementById('btn-new-bundle')?.addEventListener('click', () => {
+            document.getElementById('form-create-bundle')?.reset();
+            clearFormError('bundle-error');
+            document.getElementById('bundle-courses-checklist').innerHTML =
+                '<div style="text-align:center;color:var(--text-muted);font-size:var(--text-sm);padding:var(--space-4);">Carregando...</div>';
+            _loadCoursesForBundle();
+            UI.openModal('modal-create-bundle');
+        });
+
+        document.getElementById('modal-close-bundle')?.addEventListener('click', () => {
+            UI.closeModal('modal-create-bundle');
+        });
+
+        document.getElementById('form-create-bundle')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await handleCreateBundle();
+        });
+
+        // Liberar bundle para aluno
+        document.getElementById('form-grant-bundle')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await handleGrantBundle();
+        });
+    }
+
+    async function _loadCoursesForBundle() {
+        const checklist = document.getElementById('bundle-courses-checklist');
+        if (!checklist) return;
+        try {
+            const courses = await API.listCourses({ activeOnly: true });
+            if (!courses.length) {
+                checklist.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:var(--text-sm);padding:var(--space-4);">Nenhum curso ativo cadastrado.</div>';
+                return;
+            }
+            checklist.innerHTML = courses.map(c => `
+                <label style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-3);border-radius:var(--radius-md);border:1px solid var(--border-color);background:var(--bg-secondary);cursor:pointer;transition:all .15s;">
+                    <input type="checkbox" data-course-id="${c.id}" style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer;">
+                    <span style="font-size:var(--text-sm);font-weight:var(--weight-medium);flex:1;">${UI.escapeHtml(c.title)}</span>
+                    ${c.category ? `<span style="font-size:.7rem;color:var(--primary);">${UI.escapeHtml(c.category)}</span>` : ''}
+                </label>`).join('');
+        } catch (err) {
+            checklist.innerHTML = `<div style="text-align:center;color:var(--error);font-size:var(--text-sm);padding:var(--space-4);">Erro ao carregar cursos.</div>`;
+        }
+    }
+
+    async function handleCreateBundle() {
+        const btn = document.getElementById('btn-save-bundle');
+        const name = document.getElementById('bundle-name').value.trim();
+        const description = document.getElementById('bundle-description').value.trim();
+        const checklist = document.querySelectorAll('#bundle-courses-checklist input[type="checkbox"]:checked');
+        const courseIds = [...checklist].map(cb => cb.dataset.courseId);
+
+        clearFormError('bundle-error');
+
+        if (!name) {
+            showFormError('bundle-error', 'O nome do pacote é obrigatório.');
+            return;
+        }
+        if (!courseIds.length) {
+            showFormError('bundle-error', 'Selecione pelo menos um curso para o pacote.');
+            return;
+        }
+
+        UI.setButtonLoading(btn, 'Criando pacote...');
+        try {
+            await API.createBundle({ name, description, courseIds });
+            UI.toastSuccess(`Pacote "${name}" criado com ${courseIds.length} curso(s)!`);
+            UI.closeModal('modal-create-bundle');
+            await Promise.all([loadBundles(), _populateBundleSelects()]);
+        } catch (err) {
+            UI.resetButton(btn);
+            showFormError('bundle-error', err.message);
+        }
+    }
+
+    async function loadBundles() {
+        const grid = document.getElementById('bundles-grid');
+        if (!grid) return;
+
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:var(--space-8);color:var(--text-muted);">Carregando pacotes...</div>';
+
+        try {
+            const bundles = await API.listBundles();
+
+            if (!bundles.length) {
+                grid.innerHTML = `
+                <div style="grid-column:1/-1;text-align:center;padding:var(--space-12) var(--space-6);background:var(--bg-white);border:1px dashed var(--border-color);border-radius:var(--radius-lg);">
+                    <div style="font-size:3rem;margin-bottom:var(--space-3);opacity:0.5;">📦</div>
+                    <div style="font-family:var(--font-heading);font-weight:var(--weight-semibold);color:var(--text-primary);margin-bottom:var(--space-2);">Nenhum pacote criado</div>
+                    <p style="color:var(--text-secondary);">Crie um pacote para liberar múltiplos cursos de uma vez.</p>
+                </div>`;
+                return;
+            }
+
+            grid.innerHTML = bundles.map(b => `
+            <div class="card" style="display:flex;flex-direction:column;">
+                <div class="card-body" style="flex:1;display:flex;flex-direction:column;gap:var(--space-3);">
+                    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-2);">
+                        <h3 style="font-family:var(--font-heading);font-size:var(--text-base);font-weight:var(--weight-semibold);">${UI.escapeHtml(b.name)}</h3>
+                        <span class="badge ${b.active ? 'badge-success' : 'badge-neutral'}">${b.active ? 'Ativo' : 'Inativo'}</span>
+                    </div>
+                    ${b.description ? `<p style="font-size:var(--text-sm);color:var(--text-secondary);">${UI.escapeHtml(b.description)}</p>` : ''}
+                    <div style="font-size:var(--text-xs);color:var(--text-muted);">Criado em ${UI.formatDate(b.created_at)}</div>
+                </div>
+                <div class="card-footer" style="display:flex;gap:var(--space-2);">
+                    <button class="btn btn-danger btn-sm" style="flex:1;" onclick="AdminCore.confirmDeleteBundle('${b.id}', '${UI.escapeHtml(b.name)}')">
+                        🗑 Excluir
+                    </button>
+                </div>
+            </div>
+            `).join('');
+
+        } catch (err) {
+            grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--error);padding:var(--space-6);">Erro: ${UI.escapeHtml(err.message)}</div>`;
+        }
+    }
+
+    async function confirmDeleteBundle(bundleId, name) {
+        if (!confirm(`Excluir o pacote "${name}"?\n\nAs matrículas já geradas NÃO serão removidas.`)) return;
+        try {
+            await API.deleteBundle(bundleId);
+            UI.toastSuccess(`Pacote "${name}" excluído.`);
+            await Promise.all([loadBundles(), _populateBundleSelects()]);
+        } catch (err) {
+            UI.toastError('Erro ao excluir: ' + err.message);
+        }
+    }
+
+    async function _populateBundleSelects() {
+        const bundleSelect = document.getElementById('grant-bundle-id');
+        const studentSelect = document.getElementById('grant-bundle-student');
+        if (!bundleSelect || !studentSelect) return;
+
+        try {
+            const [bundles, students] = await Promise.all([API.listBundles(), API.listStudents()]);
+
+            bundleSelect.innerHTML = `<option value="">— Selecione um pacote —</option>` +
+                bundles.map(b => `<option value="${b.id}">${UI.escapeHtml(b.name)}</option>`).join('');
+
+            studentSelect.innerHTML = `<option value="">— Selecione o aluno —</option>` +
+                students.map(s => `<option value="${s.id}">${UI.escapeHtml(s.full_name)} (${UI.escapeHtml(s.email)})</option>`).join('');
+        } catch (err) {
+            UI.toastError('Erro ao carregar dados: ' + err.message);
+        }
+    }
+
+    async function handleGrantBundle() {
+        const btn = document.getElementById('btn-grant-bundle');
+        const bundleId = document.getElementById('grant-bundle-id').value;
+        const userId = document.getElementById('grant-bundle-student').value;
+
+        clearFormError('grant-bundle-error');
+
+        if (!bundleId || !userId) {
+            showFormError('grant-bundle-error', 'Selecione o pacote e o aluno.');
+            return;
+        }
+
+        UI.setButtonLoading(btn, 'Liberando cursos...');
+        try {
+            const result = await API.grantBundle(bundleId, userId);
+            UI.toastSuccess(`Pacote liberado! ${result.courses_granted} curso(s) adicionado(s) ao aluno.`);
+            document.getElementById('form-grant-bundle')?.reset();
+            clearFormError('grant-bundle-error');
+        } catch (err) {
+            showFormError('grant-bundle-error', err.message);
+        }
+        UI.resetButton(btn);
+    }
+
+
     // ── Helpers internos de formulário ───────────────────────
 
     function showFormError(elId, msg) {
@@ -862,6 +1090,7 @@ const AdminCore = (() => {
         initUsers,
         initCourses,
         initEnrollments,
+        initBundles,
 
         // Expostos globalmente para handlers inline (onclick)
         editUser,
@@ -873,6 +1102,8 @@ const AdminCore = (() => {
         updateCheckboxStyle,
         filterUsers,
         copyPassword,
+        toggleVip,
+        confirmDeleteBundle,
     };
 
 })();

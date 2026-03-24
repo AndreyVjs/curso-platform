@@ -17,7 +17,7 @@ const API = (() => {
     async function listUsers({ role = null } = {}) {
         let query = sb()
             .from('users')
-            .select('id, full_name, email, role, created_at')
+            .select('id, full_name, email, role, is_vip, created_at')
             .order('created_at', { ascending: false });
 
         if (role) query = query.eq('role', role);
@@ -45,18 +45,13 @@ const API = (() => {
         });
 
         if (error) {
-            // Trata erros do PL/pgSQL (prefixados: "CONFLICT:", "VALIDATION:", etc.)
             const msg = error.message.replace(/^(CONFLICT|VALIDATION|UNAUTHORIZED|FORBIDDEN|INVALID): /, '');
             throw new Error(msg);
         }
-
-        // data contém { success, user_id, email, role, message }
         return data;
     }
 
-    /**
-     * Deleta um usuário via RPC.
-     */
+    /** Deleta um usuário via RPC. */
     async function deleteUser(userId) {
         const { data, error } = await sb().rpc('admin_delete_user', {
             p_target_user_id: userId,
@@ -70,16 +65,10 @@ const API = (() => {
     }
 
     /** Atualiza dados públicos de um usuário */
-    async function updateUser(userId, { full_name, email, password }) {
-        // Como alterar senha ou email sem ServiceRole exige RPC (se não existir, daremos throw ou limitamos aqui).
-        // Atualiza primeiramente na tabela users
-        const updates = { full_name };
-
-        // Se pudermos alterar email/password, precisaríamos de uma RPC admin_update_user (opcional dependendo da estrutura atual).
-        // Por hora atualiza os dados públicos
+    async function updateUser(userId, { full_name }) {
         const { data, error } = await sb()
             .from('users')
-            .update(updates)
+            .update({ full_name })
             .eq('id', userId)
             .select()
             .single();
@@ -88,18 +77,37 @@ const API = (() => {
         return data;
     }
 
+    /**
+     * Alterna o status VIP de um aluno.
+     * @param {string} userId
+     * @param {boolean} isVip
+     */
+    async function toggleVip(userId, isVip) {
+        const { data, error } = await sb()
+            .from('users')
+            .update({ is_vip: isVip })
+            .eq('id', userId)
+            .select('id, is_vip')
+            .single();
+
+        if (error) throw new Error(error.message);
+        return data;
+    }
+
+
     // ================================================================
     // COURSES
     // ================================================================
 
     /** Lista todos os cursos (admin vê todos, aluno vê apenas ativos — RLS) */
-    async function listCourses({ activeOnly = false } = {}) {
+    async function listCourses({ activeOnly = false, category = null } = {}) {
         let query = sb()
             .from('courses')
-            .select('id, title, description, cover_image_path, pdf_file_path, active, created_at')
+            .select('id, title, description, cover_image_path, pdf_file_path, active, category, created_at')
             .order('created_at', { ascending: false });
 
         if (activeOnly) query = query.eq('active', true);
+        if (category) query = query.eq('category', category);
 
         const { data, error } = await query;
         if (error) throw new Error(error.message);
@@ -110,7 +118,7 @@ const API = (() => {
     async function getCourse(courseId) {
         const { data, error } = await sb()
             .from('courses')
-            .select('id, title, description, cover_image_path, pdf_file_path, active, created_at')
+            .select('id, title, description, cover_image_path, pdf_file_path, active, category, created_at')
             .eq('id', courseId)
             .single();
 
@@ -120,10 +128,9 @@ const API = (() => {
 
     /**
      * Cria um curso com upload de capa e PDF.
-     * @param {{ title, description, coverFile, pdfFile }} courseData
+     * @param {{ title, description, category, coverFile, pdfFile }} courseData
      */
-    async function createCourse({ title, description, coverFile, pdfFile }) {
-        // 1) Upload da capa (bucket público: course_assets)
+    async function createCourse({ title, description, category, coverFile, pdfFile }) {
         let cover_image_path = null;
         if (coverFile) {
             const coverExt = coverFile.name.split('.').pop();
@@ -131,27 +138,23 @@ const API = (() => {
             const { error: coverErr } = await sb().storage
                 .from(CONFIG.BUCKET_COVERS)
                 .upload(coverPath, coverFile, { upsert: false });
-
             if (coverErr) throw new Error(`Erro ao enviar capa: ${coverErr.message}`);
             cover_image_path = coverPath;
         }
 
-        // 2) Upload do PDF (bucket privado: course_files)
         let pdf_file_path = null;
         if (pdfFile) {
             const pdfPath = `pdfs/${crypto.randomUUID()}.pdf`;
             const { error: pdfErr } = await sb().storage
                 .from(CONFIG.BUCKET_PDFS)
                 .upload(pdfPath, pdfFile, { contentType: 'application/pdf', upsert: false });
-
             if (pdfErr) throw new Error(`Erro ao enviar PDF: ${pdfErr.message}`);
             pdf_file_path = pdfPath;
         }
 
-        // 3) Insere na tabela courses
         const { data, error } = await sb()
             .from('courses')
-            .insert({ title, description, cover_image_path, pdf_file_path })
+            .insert({ title, description, category: category || null, cover_image_path, pdf_file_path })
             .select()
             .single();
 
@@ -160,38 +163,30 @@ const API = (() => {
     }
 
     /** Atualiza um curso */
-    async function updateCourse(courseId, { title, description, coverFile, pdfFile }) {
+    async function updateCourse(courseId, { title, description, category, coverFile, pdfFile }) {
         const course = await getCourse(courseId);
-        let updates = { title, description };
+        let updates = { title, description, category: category || null };
 
-        // 1) Novo upload da capa
         if (coverFile) {
             const coverExt = coverFile.name.split('.').pop();
             const coverPath = `covers/${crypto.randomUUID()}.${coverExt}`;
             const { error: coverErr } = await sb().storage
                 .from(CONFIG.BUCKET_COVERS)
                 .upload(coverPath, coverFile, { upsert: false });
-
             if (coverErr) throw new Error(`Erro ao enviar nova capa: ${coverErr.message}`);
             updates.cover_image_path = coverPath;
-
-            // Tentativa de remover a capa antiga (ignora erro)
             if (course.cover_image_path) {
                 sb().storage.from(CONFIG.BUCKET_COVERS).remove([course.cover_image_path]);
             }
         }
 
-        // 2) Novo upload do PDF
         if (pdfFile) {
             const pdfPath = `pdfs/${crypto.randomUUID()}.pdf`;
             const { error: pdfErr } = await sb().storage
                 .from(CONFIG.BUCKET_PDFS)
                 .upload(pdfPath, pdfFile, { contentType: 'application/pdf', upsert: false });
-
             if (pdfErr) throw new Error(`Erro ao enviar novo PDF: ${pdfErr.message}`);
             updates.pdf_file_path = pdfPath;
-
-            // Tentativa de remover o PDF antigo (ignora erro)
             if (course.pdf_file_path) {
                 sb().storage.from(CONFIG.BUCKET_PDFS).remove([course.pdf_file_path]);
             }
@@ -223,19 +218,95 @@ const API = (() => {
 
     /** Deleta um curso (e limpa os arquivos do Storage) */
     async function deleteCourse(courseId) {
-        // Busca paths antes de deletar
         const course = await getCourse(courseId);
-
-        // Remove arquivos do storage (sem parar se falhar)
         if (course.cover_image_path) {
             await sb().storage.from(CONFIG.BUCKET_COVERS).remove([course.cover_image_path]);
         }
         if (course.pdf_file_path) {
             await sb().storage.from(CONFIG.BUCKET_PDFS).remove([course.pdf_file_path]);
         }
-
         const { error } = await sb().from('courses').delete().eq('id', courseId);
         if (error) throw new Error(error.message);
+    }
+
+    /**
+     * Retorna as categorias distintas de cursos ativos via RPC.
+     * @returns {string[]}
+     */
+    async function getDistinctCategories() {
+        const { data, error } = await sb().rpc('get_distinct_categories');
+        if (error) return [];
+        return (data || []).map(r => r.category).filter(Boolean);
+    }
+
+
+    // ================================================================
+    // BUNDLES (Pacotes de Cursos)
+    // ================================================================
+
+    /** Lista todos os bundles */
+    async function listBundles() {
+        const { data, error } = await sb()
+            .from('bundles')
+            .select('id, name, description, active, created_at')
+            .order('created_at', { ascending: false });
+
+        if (error) throw new Error(error.message);
+        return data;
+    }
+
+    /** Busca um bundle pelo ID, com seus cursos */
+    async function getBundle(bundleId) {
+        const { data, error } = await sb()
+            .from('bundles')
+            .select(`id, name, description, active, bundle_courses ( course_id, courses ( id, title ) )`)
+            .eq('id', bundleId)
+            .single();
+
+        if (error) throw new Error(error.message);
+        return data;
+    }
+
+    /** Cria um bundle e associa a lista de course_ids */
+    async function createBundle({ name, description, courseIds = [] }) {
+        const { data: bundle, error } = await sb()
+            .from('bundles')
+            .insert({ name, description })
+            .select()
+            .single();
+
+        if (error) throw new Error(error.message);
+
+        if (courseIds.length > 0) {
+            const rows = courseIds.map(cid => ({ bundle_id: bundle.id, course_id: cid }));
+            const { error: relErr } = await sb().from('bundle_courses').insert(rows);
+            if (relErr) throw new Error(relErr.message);
+        }
+        return bundle;
+    }
+
+    /** Deleta um bundle (bundle_courses removidos por CASCADE) */
+    async function deleteBundle(bundleId) {
+        const { error } = await sb().from('bundles').delete().eq('id', bundleId);
+        if (error) throw new Error(error.message);
+    }
+
+    /**
+     * Libera todos os cursos de um bundle para um aluno via RPC.
+     * @param {string} bundleId
+     * @param {string} userId
+     */
+    async function grantBundle(bundleId, userId) {
+        const { data, error } = await sb().rpc('grant_bundle_to_student', {
+            p_bundle_id: bundleId,
+            p_user_id: userId,
+        });
+
+        if (error) {
+            const msg = error.message.replace(/^(UNAUTHORIZED|FORBIDDEN|INVALID): /, '');
+            throw new Error(msg);
+        }
+        return data;
     }
 
 
@@ -248,13 +319,10 @@ const API = (() => {
         const { data, error } = await sb()
             .from('enrollments')
             .select(`
-        id,
-        granted_at,
-        user_id,
-        course_id,
-        users!enrollments_user_id_fkey ( full_name, email ),
-        courses ( title )
-      `)
+                id, granted_at, user_id, course_id,
+                users!enrollments_user_id_fkey ( full_name, email ),
+                courses ( title )
+            `)
             .order('granted_at', { ascending: false });
 
         if (error) throw new Error(error.message);
@@ -293,12 +361,12 @@ const API = (() => {
 
 
     // ================================================================
-    // ALUNO: Cursos matriculados
+    // ALUNO: Cursos
     // ================================================================
 
     /**
      * Busca os cursos do aluno logado via RPC.
-     * Retorna somente cursos ativos com matrícula ativa.
+     * VIPs recebem todos os cursos ativos; alunos normais apenas os matriculados.
      */
     async function getMyEnrolledCourses() {
         const { data, error } = await sb().rpc('get_my_enrolled_courses');
@@ -317,8 +385,7 @@ const API = (() => {
 
     /**
      * Gera uma URL assinada para download do PDF (válida por N segundos).
-     * A geração SÓ funciona se a policy de storage permitir (aluno matriculado).
-     * @param {string} pdfPath - pdf_file_path salvo no banco
+     * @param {string} pdfPath
      * @returns {string} URL assinada
      */
     async function getSignedPdfUrl(pdfPath) {
@@ -335,11 +402,6 @@ const API = (() => {
     // STORAGE: URL pública da capa
     // ================================================================
 
-    /**
-     * Retorna a URL pública de uma imagem de capa.
-     * @param {string} imagePath
-     * @returns {string} URL pública
-     */
     function getCoverUrl(imagePath) {
         if (!imagePath) return null;
         const { data } = Auth.client().storage
@@ -363,33 +425,17 @@ const API = (() => {
     // API pública
     return {
         // Users
-        listUsers,
-        listStudents,
-        createUser,
-        updateUser,
-        deleteUser,
-
+        listUsers, listStudents, createUser, updateUser, deleteUser, toggleVip,
         // Courses
-        listCourses,
-        getCourse,
-        createCourse,
-        updateCourse,
-        toggleCourseStatus,
-        deleteCourse,
-
+        listCourses, getCourse, createCourse, updateCourse, toggleCourseStatus, deleteCourse, getDistinctCategories,
+        // Bundles
+        listBundles, getBundle, createBundle, deleteBundle, grantBundle,
         // Enrollments
-        listEnrollments,
-        enrollStudent,
-        unenrollStudent,
-
+        listEnrollments, enrollStudent, unenrollStudent,
         // Student
-        getMyEnrolledCourses,
-        checkCourseAccess,
-        getSignedPdfUrl,
-
+        getMyEnrolledCourses, checkCourseAccess, getSignedPdfUrl,
         // Storage
         getCoverUrl,
-
         // Stats
         getAdminStats,
     };

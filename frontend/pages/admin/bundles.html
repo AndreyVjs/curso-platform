@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pacotes de Cursos — CursosLucrativos</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="../../assets/css/variables.css" />
+    <link rel="stylesheet" href="../../assets/css/base.css" />
+    <link rel="stylesheet" href="../../assets/css/components.css" />
+    <link rel="stylesheet" href="../../assets/css/layouts.css" />
+</head>
+
+<body>
+
+    <div class="app-layout">
+        <!-- ── SIDEBAR ── -->
+        <aside class="sidebar" id="sidebar">
+            <a href="dashboard.html" class="sidebar-logo">
+                <div class="sidebar-logo-icon">📚</div>
+                <div class="sidebar-logo-text">CursosLucrativos<div class="sidebar-logo-tagline">Painel Admin</div>
+                </div>
+            </a>
+            <nav class="sidebar-section">
+                <div class="sidebar-section-label">Principal</div>
+                <a href="dashboard.html" class="nav-link"><span class="nav-icon">📊</span> Dashboard</a>
+                <a href="users.html" class="nav-link"><span class="nav-icon">👥</span> Alunos</a>
+                <a href="courses.html" class="nav-link"><span class="nav-icon">📚</span> Cursos</a>
+                <a href="enrollments.html" class="nav-link"><span class="nav-icon">🎓</span> Matrículas</a>
+                <a href="bundles.html" class="nav-link active"><span class="nav-icon">📦</span> Pacotes</a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="sidebar-user">
+                    <div class="avatar" id="sidebar-avatar">A</div>
+                    <div class="sidebar-user-info">
+                        <div class="sidebar-user-name" id="sidebar-user-name">Carregando...</div>
+                        <div class="sidebar-user-role" id="sidebar-user-role">Admin</div>
+                    </div>
+                    <button id="logout-btn" title="Sair"
+                        style="background:none;border:none;cursor:pointer;font-size:1rem;padding:4px;color:var(--text-muted);">↩</button>
+                </div>
+            </div>
+        </aside>
+
+        <div class="main-wrapper">
+            <header class="topbar">
+                <button id="menu-toggle" class="btn btn-ghost btn-sm" style="display:none;">☰</button>
+                <div class="topbar-greeting">
+                    <div class="topbar-greeting-text">Gerenciamento de</div>
+                    <div class="topbar-greeting-name">Pacotes de Cursos</div>
+                </div>
+                <div class="topbar-actions">
+                    <button id="btn-new-bundle" class="btn btn-primary">+ Novo Pacote</button>
+                </div>
+            </header>
+
+            <main class="main-content">
+                <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+                    <div>
+                        <h1>Pacotes de Cursos</h1>
+                        <p>Agrupe cursos em pacotes e libere o acesso para alunos de uma só vez.</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="document.getElementById('btn-new-bundle').click()">
+                        + Novo Pacote
+                    </button>
+                </div>
+
+                <!-- Card: Liberar Pacote para Aluno -->
+                <div class="card" style="margin-bottom: var(--space-8);">
+                    <div class="card-header">
+                        <h2 class="card-title">🚀 Liberar Pacote para Aluno</h2>
+                    </div>
+                    <div class="card-body">
+                        <form id="form-grant-bundle" style="display:flex; flex-direction:column; gap: var(--space-5);">
+                            <div class="two-col" style="align-items: end; gap: var(--space-5);">
+                                <div class="form-group">
+                                    <label class="form-label" for="grant-bundle-id">Selecione o Pacote <span
+                                            class="required">*</span></label>
+                                    <select id="grant-bundle-id" class="form-control" required>
+                                        <option value="">— Carregando pacotes... —</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="grant-bundle-student">Selecione o Aluno <span
+                                            class="required">*</span></label>
+                                    <select id="grant-bundle-student" class="form-control" required>
+                                        <option value="">— Carregando alunos... —</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Erro -->
+                            <div id="grant-bundle-error" class="hidden" style="
+                                background: var(--error-light);
+                                border: 1px solid var(--error-border);
+                                border-radius: var(--radius-md);
+                                padding: var(--space-3) var(--space-4);
+                                font-size: var(--text-sm);
+                                color: #991b1b;
+                                display: none;
+                            "></div>
+
+                            <!-- Info -->
+                            <div style="
+                                background: var(--success-light);
+                                border: 1px solid var(--success-border);
+                                border-radius: var(--radius-md);
+                                padding: var(--space-3) var(--space-4);
+                                font-size: var(--text-sm);
+                                color: #065f46;
+                                display: flex;
+                                align-items: flex-start;
+                                gap: var(--space-2);
+                            ">
+                                <span>✅</span>
+                                <span>Todos os cursos do pacote serão liberados para o aluno de uma só vez. Matriculas
+                                    duplicadas são ignoradas automaticamente.</span>
+                            </div>
+
+                            <div>
+                                <button type="submit" id="btn-grant-bundle" class="btn btn-primary btn-lg">
+                                    🚀 Liberar Pacote ao Aluno
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Grid de Pacotes -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">📦 Pacotes Cadastrados</h2>
+                    </div>
+                    <div class="card-body">
+                        <div id="bundles-grid"
+                            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: var(--space-5);">
+                            <div
+                                style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: var(--space-8);">
+                                Carregando...</div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- MODAL: Criar Pacote -->
+    <div class="modal-overlay" id="modal-create-bundle">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-bundle-title"
+            style="max-width: 600px;">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modal-bundle-title">📦 Criar Novo Pacote</h3>
+                <button class="modal-close" id="modal-close-bundle" aria-label="Fechar">✕</button>
+            </div>
+            <form id="form-create-bundle" enctype="multipart/form-data">
+                <div class="modal-body" style="display:flex; flex-direction:column; gap:var(--space-5);">
+
+                    <div class="form-group">
+                        <label class="form-label" for="bundle-name">Nome do Pacote <span
+                                class="required">*</span></label>
+                        <input type="text" id="bundle-name" class="form-control"
+                            placeholder="Ex: Kit Confeitaria Completa, Pacote Fitness Premium..." required />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="bundle-description">Descrição (opcional)</label>
+                        <textarea id="bundle-description" class="form-control"
+                            placeholder="Descreva o que está incluído neste pacote..." rows="2"></textarea>
+                    </div>
+
+                    <!-- Seleção de Cursos -->
+                    <div class="form-group">
+                        <label class="form-label">Cursos incluídos <span class="required">*</span></label>
+                        <div id="bundle-courses-checklist"
+                            style="display:flex;flex-direction:column;gap:var(--space-2);max-height:240px;overflow-y:auto;padding-right:4px;border:1.5px solid var(--border-color);border-radius:var(--radius-md);padding:var(--space-3);">
+                            <div
+                                style="text-align:center;color:var(--text-muted);font-size:var(--text-sm);padding:var(--space-4);">
+                                Carregando cursos...</div>
+                        </div>
+                    </div>
+
+                    <!-- Erro -->
+                    <div id="bundle-error" class="hidden" style="
+                        background: var(--error-light);
+                        border: 1px solid var(--error-border);
+                        border-radius: var(--radius-md);
+                        padding: var(--space-3) var(--space-4);
+                        font-size: var(--text-sm);
+                        color: #991b1b;
+                        display: none;
+                    "></div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary"
+                        onclick="UI.closeModal('modal-create-bundle')">Cancelar</button>
+                    <button type="submit" id="btn-save-bundle" class="btn btn-primary">📦 Criar Pacote</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script src="../../assets/js/config.js"></script>
+    <script src="../../assets/js/ui.js"></script>
+    <script src="../../assets/js/auth.js"></script>
+    <script src="../../assets/js/api.js"></script>
+    <script src="../../assets/js/admin-core.js"></script>
+    <script>
+        if (window.innerWidth <= 768) document.getElementById('menu-toggle').style.display = 'inline-flex';
+        AdminCore.initBundles();
+    </script>
+</body>
+
+</html>

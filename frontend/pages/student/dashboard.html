@@ -11,6 +11,128 @@
     <link rel="stylesheet" href="../../assets/css/base.css" />
     <link rel="stylesheet" href="../../assets/css/components.css" />
     <link rel="stylesheet" href="../../assets/css/layouts.css" />
+    <style>
+        /* ── Filtros de Categoria ───────────────────────────── */
+        .category-filters {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: var(--space-6);
+        }
+
+        .category-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.4rem 1rem;
+            font-family: var(--font-body);
+            font-size: var(--text-sm);
+            font-weight: var(--weight-medium);
+            border: 1.5px solid var(--border-color);
+            border-radius: var(--radius-full);
+            background: var(--bg-white);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition-fast);
+            white-space: nowrap;
+        }
+
+        .category-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .category-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff;
+            box-shadow: var(--shadow-primary);
+        }
+
+        /* ── Card bloqueado (sem acesso) ───────────────────── */
+        .course-card.locked {
+            opacity: 0.78;
+            cursor: default;
+        }
+
+        .course-card.locked:hover {
+            transform: none;
+            box-shadow: var(--shadow-sm);
+            border-color: var(--border-color);
+        }
+
+        .lock-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.35);
+            border-radius: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+        }
+
+        .course-card-cover {
+            position: relative;
+        }
+
+        /* ── Banner VIP ─────────────────────────────────────── */
+        .vip-banner {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            background: linear-gradient(135deg, #134E2A, #1a6b39);
+            border-radius: var(--radius-lg);
+            padding: var(--space-4) var(--space-5);
+            margin-bottom: var(--space-6);
+            color: #fff;
+            box-shadow: var(--shadow-primary);
+        }
+
+        .vip-banner-icon {
+            font-size: 1.8rem;
+            flex-shrink: 0;
+        }
+
+        .vip-banner-text strong {
+            display: block;
+            font-family: var(--font-heading);
+            font-size: var(--text-base);
+            font-weight: var(--weight-bold);
+        }
+
+        .vip-banner-text span {
+            font-size: var(--text-sm);
+            opacity: 0.82;
+        }
+
+        /* ── Badge de categoria no card ─────────────────────── */
+        .badge-category {
+            background: #e8f0fe;
+            color: #1a56db;
+            font-size: var(--text-xs);
+            font-weight: var(--weight-semibold);
+            padding: 0.18rem 0.6rem;
+            border-radius: var(--radius-full);
+        }
+
+        html.dark .badge-category {
+            background: #1e3a6e;
+            color: #93c5fd;
+        }
+
+        /* ── Contador filtrado ──────────────────────────────── */
+        #filtered-count-wrap {
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+            margin-bottom: var(--space-4);
+        }
+
+        #filtered-count-wrap strong {
+            color: var(--primary);
+        }
+    </style>
 </head>
 
 <body>
@@ -77,16 +199,32 @@
                 <!-- Saudação personalizada -->
                 <div class="page-header">
                     <h1 id="greeting-text">Olá! Seus conteúdos estão prontos.</h1>
-                    <p>Selecione um curso abaixo para acessar o material completo.</p>
+                    <p>Selecione uma categoria para filtrar ou acesse qualquer curso abaixo.</p>
                 </div>
 
-                <!-- Contagem de cursos -->
-                <div style="margin-bottom: var(--space-6); display: flex; align-items: center; gap: var(--space-3);">
-                    <span style="font-size: var(--text-sm); color: var(--text-secondary);">
-                        Você tem acesso a
-                        <strong id="courses-count" style="color: var(--primary);">...</strong>
-                        curso(s)
-                    </span>
+                <!-- Banner VIP (oculto por padrão, exibido via JS) -->
+                <div id="vip-banner" class="vip-banner" style="display:none;">
+                    <div class="vip-banner-icon">⭐</div>
+                    <div class="vip-banner-text">
+                        <strong>Assinante Premium — Acesso Total</strong>
+                        <span>Você tem acesso livre a todos os cursos da plataforma!</span>
+                    </div>
+                </div>
+
+                <!-- Filtros de Categoria -->
+                <div id="category-filters-wrap" style="display:none;">
+                    <div class="category-filters" id="category-filters">
+                        <button class="category-btn active" data-category="" id="cat-btn-all">
+                            🔍 Todos
+                        </button>
+                        <!-- Categorias inseridas dinamicamente pelo JS -->
+                    </div>
+                </div>
+
+                <!-- Contagem de cursos exibidos -->
+                <div id="filtered-count-wrap" style="display:none;">
+                    Exibindo <strong id="filtered-count">0</strong> curso(s)
+                    <span id="filtered-label"></span>
                 </div>
 
                 <!-- Grid de Cursos -->

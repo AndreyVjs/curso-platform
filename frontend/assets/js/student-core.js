@@ -12,7 +12,6 @@ const StudentCore = (() => {
 
     const { profile } = result;
 
-    // Sidebar / Topbar
     const nameEl = document.getElementById('sidebar-user-name');
     const roleEl = document.getElementById('sidebar-user-role');
     const avatarEl = document.getElementById('sidebar-avatar');
@@ -23,7 +22,7 @@ const StudentCore = (() => {
     if (avatarEl) avatarEl.textContent = UI.initials(profile.full_name);
     if (topbarEl) topbarEl.textContent = profile.full_name.split(' ')[0] + '.';
 
-    // Sidebar greeting
+    // Saudação da sidebar
     const greetingEl = document.getElementById('greeting-text');
     if (greetingEl) {
       const hour = new Date().getHours();
@@ -57,6 +56,11 @@ const StudentCore = (() => {
   // DASHBOARD: Vitrine de Cursos do Aluno
   // ================================================================
 
+  // Estado local do dashboard
+  let _allCourses = [];   // todos os cursos retornados pela RPC
+  let _downloadedIds = new Set(); // IDs já baixados
+  let _isVip = false;
+
   async function initDashboard() {
     const result = await initLayout();
     if (!result) return;
@@ -75,30 +79,25 @@ const StudentCore = (() => {
       const { data: { user } } = await sb.auth.getUser();
 
       // Carrega cursos e downloads em paralelo
-      const [courses, dlData] = await Promise.all([
+      const [courses, dlData, userRow] = await Promise.all([
         API.getMyEnrolledCourses(),
-        sb.from('downloads').select('course_id').eq('user_id', user.id)
+        sb.from('downloads').select('course_id').eq('user_id', user.id),
+        sb.from('users').select('is_vip').eq('id', user.id).single(),
       ]);
 
-      const downloadedIds = new Set((dlData.data || []).map(d => d.course_id));
+      _allCourses = courses || [];
+      _downloadedIds = new Set((dlData.data || []).map(d => d.course_id));
+      _isVip = userRow?.data?.is_vip === true;
 
-      // Atualiza contador
-      const countEl = document.getElementById('courses-count');
-      if (countEl) countEl.textContent = courses.length;
+      // Banner VIP
+      const vipBanner = document.getElementById('vip-banner');
+      if (vipBanner && _isVip) vipBanner.style.display = 'flex';
 
-      if (!courses.length) {
-        grid.innerHTML = `
-          <div style="grid-column: 1 / -1;">
-            <div class="table-empty" style="padding: var(--space-16);">
-              <div class="empty-icon">📦</div>
-              <div class="empty-title">Nenhum curso disponível ainda</div>
-              <p>Quando o administrador liberar acesso a um curso, ele aparecerá aqui.</p>
-            </div>
-          </div>`;
-        return;
-      }
+      // Monta os filtros de categoria dinamicamente
+      await _buildCategoryFilters();
 
-      grid.innerHTML = courses.map(c => _renderCourseCard(c, downloadedIds)).join('');
+      // Renderiza todos os cursos inicialmente
+      _renderFilteredCourses('');
 
     } catch (err) {
       grid.innerHTML = `
@@ -108,17 +107,116 @@ const StudentCore = (() => {
     }
   }
 
+  /**
+   * Constrói os botões de filtro de categoria com base nas categorias
+   * presentes nos cursos do aluno (sem chamar uma RPC extra).
+   */
+  async function _buildCategoryFilters() {
+    const filtersEl = document.getElementById('category-filters');
+    if (!filtersEl) return;
+
+    // Coleta categorias únicas dos cursos do aluno
+    const catSet = new Set();
+    _allCourses.forEach(c => { if (c.category) catSet.add(c.category); });
+    const categories = [...catSet].sort();
+
+    // Se há menos de 2 cursos ou 0 categorias, não exibe filtros
+    const wrapEl = document.getElementById('category-filters-wrap');
+    if (!wrapEl) return;
+    if (categories.length < 1) {
+      wrapEl.style.display = 'none';
+      return;
+    }
+    wrapEl.style.display = 'block';
+
+    // Botão "Todos" já está no HTML, apenas adiciona os de categoria
+    const existing = filtersEl.querySelectorAll('[data-category]:not([data-category=""])');
+    existing.forEach(el => el.remove());
+
+    const emojis = { confeitaria: '🧁', salgados: '🥟', fitness: '💪', artesanato: '🎨', gourmet: '🍽', bebidas: '🥤', sobremesas: '🍮', kids: '👦', outros: '📦' };
+
+    categories.forEach(cat => {
+      const btn = document.createElement('button');
+      btn.className = 'category-btn';
+      btn.dataset.category = cat;
+      const icon = emojis[cat.toLowerCase()] || '📂';
+      btn.innerHTML = `${icon} ${UI.escapeHtml(cat)}`;
+      btn.addEventListener('click', () => _onCategoryClick(btn, cat));
+      filtersEl.appendChild(btn);
+    });
+
+    // Evento no botão "Todos"
+    document.getElementById('cat-btn-all')?.addEventListener('click', function () {
+      _onCategoryClick(this, '');
+    });
+  }
+
+  function _onCategoryClick(btn, category) {
+    document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    _renderFilteredCourses(category);
+  }
+
+  /**
+   * Renderiza o grid filtrando por categoria.
+   * @param {string} category - string vazia = todos
+   */
+  function _renderFilteredCourses(category) {
+    const grid = document.getElementById('courses-grid');
+    if (!grid) return;
+
+    const filtered = category
+      ? _allCourses.filter(c => c.category === category)
+      : _allCourses;
+
+    // Atualiza contador
+    const countWrap = document.getElementById('filtered-count-wrap');
+    const countEl = document.getElementById('filtered-count');
+    const labelEl = document.getElementById('filtered-label');
+    if (countWrap && _allCourses.length > 0) {
+      countWrap.style.display = 'block';
+      if (countEl) countEl.textContent = filtered.length;
+      if (labelEl) labelEl.textContent = category ? `na categoria "${category}"` : '';
+    }
+
+    if (!filtered.length) {
+      grid.innerHTML = `
+        <div style="grid-column: 1 / -1;">
+          <div class="table-empty" style="padding: var(--space-16);">
+            <div class="empty-icon">📦</div>
+            <div class="empty-title">Nenhum curso nesta categoria ainda</div>
+            <p>${category ? `Não há cursos de "${UI.escapeHtml(category)}" liberados para você.` : 'Quando o administrador liberar acesso a um curso, ele aparecerá aqui.'}</p>
+          </div>
+        </div>`;
+      return;
+    }
+
+    grid.innerHTML = filtered.map(c => _renderCourseCard(c, _downloadedIds)).join('');
+  }
+
+  /**
+   * Renderiza um card de curso.
+   * Se o aluno não for VIP e não tiver matrícula, exibe cadeado mas
+   * o card sempre aparece (VIP já recebe todos da RPC, portanto se
+   * está na lista significa que tem acesso).
+   */
   function _renderCourseCard(course, downloadedIds = new Set()) {
     const coverUrl = API.getCoverUrl(course.cover_image_path);
     const courseUrl = `course-view.html?id=${course.course_id}`;
     const isNew = !downloadedIds.has(course.course_id);
+    const catHtml = course.category
+      ? `<span class="badge-category">${UI.escapeHtml(course.category)}</span>`
+      : '';
 
+    // Como a RPC já filtra por acesso (enrolled ou VIP), todo curso
+    // retornado aqui é acessível. O cadeado é apenas visual na vitrine
+    // pública — na área do aluno todos os cards são clicáveis.
     return `
       <article class="course-card" onclick="window.location.href='${courseUrl}'" tabindex="0"
         role="button" aria-label="Acessar curso: ${UI.escapeHtml(course.title)}"
-        onkeydown="if(event.key==='Enter' || event.key===' ') window.location.href='${courseUrl}'"
+        onkeydown="if(event.key==='Enter'||event.key===' ') window.location.href='${courseUrl}'"
         style="cursor:pointer;">
-        <div class="course-card-cover">
+        <div class="course-card-cover" style="position:relative;">
           ${coverUrl
         ? `<img src="${coverUrl}" alt="Capa de ${UI.escapeHtml(course.title)}" loading="lazy" />`
         : `<div class="course-card-cover-placeholder">📚</div>`
@@ -126,11 +224,12 @@ const StudentCore = (() => {
           ${isNew ? '<div style="position:absolute;top:10px;right:10px;background:#ef4444;color:#fff;font-size:.68rem;font-weight:700;padding:3px 9px;border-radius:999px;letter-spacing:.04em;">NOVO</div>' : ''}
         </div>
         <div class="course-card-body">
+          ${catHtml ? `<div style="margin-bottom:2px;">${catHtml}</div>` : ''}
           <h3 class="course-card-title">${UI.escapeHtml(course.title)}</h3>
           <p class="course-card-description">
             ${UI.escapeHtml(course.description || 'Acesse o material completo deste curso.')}
           </p>
-          <div style="margin-top: auto; display:flex; gap: 6px; align-items:center;">
+          <div style="margin-top: auto; display:flex; gap: 6px; align-items:center; flex-wrap:wrap;">
             <span class="badge badge-success">✅ Acesso Liberado</span>
             ${isNew
         ? '<span class="badge" style="background:#fef3c7;color:#92400e;">🆕 Não acessado</span>'
@@ -156,7 +255,6 @@ const StudentCore = (() => {
     const result = await initLayout();
     if (!result) return;
 
-    // Extrai ID do curso da URL (?id=UUID)
     const params = new URLSearchParams(window.location.search);
     const courseId = params.get('id');
 
@@ -165,17 +263,14 @@ const StudentCore = (() => {
       return;
     }
 
-    // Verifica acesso antes de mostrar qualquer coisa
     const hasAccess = await API.checkCourseAccess(courseId);
     if (!hasAccess) {
       _showAccessDenied('Você não tem permissão para acessar este curso.');
       return;
     }
 
-    // Carrega dados do curso
     await loadCourseDetails(courseId);
 
-    // Configura botão de download
     document.getElementById('download-btn')?.addEventListener('click', async () => {
       await handleDownload(courseId);
     });
@@ -185,14 +280,12 @@ const StudentCore = (() => {
     const container = document.getElementById('course-details');
     if (!container) return;
 
-    // Mostra skeleton
     document.getElementById('course-title-skeleton')?.classList.remove('hidden');
     document.getElementById('course-content')?.classList.add('hidden');
 
     try {
       const course = await API.getCourse(courseId);
 
-      // Preenche dados
       const coverEl = document.getElementById('course-cover-img');
       const coverPlaceholder = document.getElementById('course-cover-placeholder');
       const titleEl = document.getElementById('course-title');
@@ -210,10 +303,8 @@ const StudentCore = (() => {
       if (titleEl) titleEl.textContent = course.title;
       if (descEl) descEl.textContent = course.description || 'Material exclusivo da plataforma.';
 
-      // Atualiza o <title> da página
       document.title = `${course.title} — CursosLucrativos`;
 
-      // Se não houver PDF, desabilita o botão
       if (downloadBtn && !course.pdf_file_path) {
         downloadBtn.disabled = true;
         downloadBtn.innerHTML = '⚠️ PDF não disponível ainda';
@@ -221,7 +312,6 @@ const StudentCore = (() => {
         downloadBtn.style.cursor = 'not-allowed';
       }
 
-      // Esconde skeleton e mostra conteúdo
       document.getElementById('course-title-skeleton')?.classList.add('hidden');
       document.getElementById('course-content')?.classList.remove('hidden');
 
@@ -262,7 +352,7 @@ const StudentCore = (() => {
 
       UI.toastSuccess('Download iniciado! O link expira em 60 segundos por segurança.', 'Download');
 
-      // Registra o download para rastreamento de progresso
+      // Registra o download para rastreamento
       try {
         const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
         const { data: { user } } = await sb.auth.getUser();
@@ -270,7 +360,6 @@ const StudentCore = (() => {
           { user_id: user.id, course_id: courseId, downloaded_at: new Date().toISOString() },
           { onConflict: 'user_id,course_id' }
         );
-        // Atualiza badge visual na página
         const badgeEl = document.getElementById('download-status-badge');
         if (badgeEl) {
           badgeEl.textContent = '✔ Baixado';
@@ -316,13 +405,11 @@ const StudentCore = (() => {
     const { profile } = result;
     const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
-    // Preenche campos
     const nameInput = document.getElementById('profile-name');
     const emailInput = document.getElementById('profile-email');
     if (nameInput) nameInput.value = profile.full_name;
     if (emailInput) emailInput.value = profile.email;
 
-    // Sidebar Info
     const avatarEl = document.getElementById('profile-avatar');
     const dispNameEl = document.getElementById('profile-display-name');
     const dispEmailEl = document.getElementById('profile-display-email');
@@ -334,7 +421,7 @@ const StudentCore = (() => {
     try {
       const [{ count: enCount }, { count: dlCount }] = await Promise.all([
         sb.from('enrollments').select('*', { count: 'exact', head: true }).eq('user_id', profile.id),
-        sb.from('downloads').select('*', { count: 'exact', head: true }).eq('user_id', profile.id)
+        sb.from('downloads').select('*', { count: 'exact', head: true }).eq('user_id', profile.id),
       ]);
 
       const enEl = document.getElementById('stat-courses');
@@ -343,7 +430,7 @@ const StudentCore = (() => {
       if (dlEl) dlEl.textContent = dlCount || 0;
     } catch (_) { /* erro silencioso em stats */ }
 
-    // Salvar Alterações (Nome e/ou Senha)
+    // Salvar alterações
     document.getElementById('form-profile')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = document.getElementById('btn-save-profile');
@@ -357,11 +444,9 @@ const StudentCore = (() => {
       if (errEl) { errEl.textContent = ''; errEl.classList.add('hidden'); }
 
       try {
-        // 1. Atualizar Nome no Supabase (tabela public.users)
         const { error: nameErr } = await sb.from('users').update({ full_name: newName }).eq('id', profile.id);
         if (nameErr) throw nameErr;
 
-        // 2. Atualizar Senha no Auth (se preenchida)
         if (newPwd) {
           if (newPwd.length < 6) throw new Error('A nova senha deve ter pelo menos 6 caracteres.');
           const { error: authErr } = await sb.auth.updateUser({ password: newPwd });
@@ -369,12 +454,8 @@ const StudentCore = (() => {
         }
 
         UI.toastSuccess('Seu perfil foi atualizado com sucesso!');
-
-        // Atualiza UI local
         if (dispNameEl) dispNameEl.textContent = newName;
         document.getElementById('profile-password').value = '';
-
-        // Atualiza avatar da sidebar se necessário
         const sideAvatar = document.getElementById('sidebar-avatar');
         if (sideAvatar) sideAvatar.textContent = UI.initials(newName);
 

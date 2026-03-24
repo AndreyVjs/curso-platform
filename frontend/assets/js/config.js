@@ -21,6 +21,7 @@ const CONFIG = Object.freeze({
     ADMIN_USERS: '/frontend/pages/admin/users.html',
     ADMIN_COURSES: '/frontend/pages/admin/courses.html',
     ADMIN_ENROLLMENTS: '/frontend/pages/admin/enrollments.html',
+    ADMIN_BUNDLES: '/frontend/pages/admin/bundles.html',
     STUDENT_DASHBOARD: '/frontend/pages/student/dashboard.html',
     STUDENT_COURSE: '/frontend/pages/student/course-view.html',
   },
