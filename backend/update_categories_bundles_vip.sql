@@ -127,6 +127,7 @@ CREATE INDEX IF NOT EXISTS idx_bundle_courses_course ON public.bundle_courses(co
 -- e apenas os cursos com matrícula para alunos normais.
 -- Também inclui a categoria no retorno.
 -- ============================================================
+DROP FUNCTION IF EXISTS public.get_my_enrolled_courses();
 CREATE OR REPLACE FUNCTION public.get_my_enrolled_courses()
 RETURNS TABLE (
     course_id         UUID,
@@ -192,6 +193,7 @@ GRANT EXECUTE ON FUNCTION public.get_my_enrolled_courses() TO authenticated;
 -- 7. ATUALIZAR RPC: check_course_access
 -- Alunos VIP têm acesso a qualquer curso ativo.
 -- ============================================================
+DROP FUNCTION IF EXISTS public.check_course_access(UUID);
 CREATE OR REPLACE FUNCTION public.check_course_access(p_course_id UUID)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
